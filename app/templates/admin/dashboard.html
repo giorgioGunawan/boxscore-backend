@@ -956,6 +956,27 @@
         // WIDGET FUNCTIONS
         // =====================
 
+        // Helper to format date/time in user's local timezone
+        function formatLocalDate(dateStr, timeStr) {
+            // Assume times from API are in EST/ET (NBA standard)
+            // Create date in EST then convert to local
+            const estDateStr = `${dateStr}T${timeStr || '00:00'}:00`;
+            const date = new Date(estDateStr + '-05:00'); // EST is UTC-5
+            
+            return {
+                date: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+                time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                weekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                full: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                dateObj: date
+            };
+        }
+
+        function formatLocalDateOnly(dateStr) {
+            const date = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone day shifts
+            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+        }
+
         async function loadAllWidgets() {
             const teamId = document.getElementById('widget-team').value;
             const playerId = document.getElementById('widget-player-id').value;
@@ -989,16 +1010,14 @@
                 `;
                 
                 for (const game of gamesData.games) {
-                    const date = new Date(game.date + 'T' + game.time);
-                    const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const local = formatLocalDate(game.date, game.time);
                     const vsAt = game.is_home ? 'vs' : '@';
                     
                     html += `
                         <div class="game-row">
                             <span class="game-vs">${vsAt}</span>
                             <span class="game-opponent">${game.opponent}</span>
-                            <span class="game-datetime">${dateStr} ${timeStr}</span>
+                            <span class="game-datetime">${local.date} ${local.time}</span>
                         </div>
                     `;
                 }
@@ -1047,8 +1066,7 @@
                 
                 let html = '';
                 for (const game of data.games) {
-                    const date = new Date(game.date);
-                    const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    const dateStr = formatLocalDateOnly(game.date);
                     const isWin = game.result === 'W';
                     const scoreClass = isWin ? 'win' : 'loss';
                     
@@ -1128,16 +1146,14 @@
                 }
                 
                 const game = data.games[0];
-                const gameDate = new Date(game.date + 'T' + game.time);
+                const local = formatLocalDate(game.date, game.time);
+                const gameDate = local.dateObj;
                 const now = new Date();
                 const diff = gameDate - now;
                 
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                
-                const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                const timeStr = gameDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+                const hours = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+                const mins = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
                 
                 const matchup = game.is_home ? `${game.opponent} vs ${teamAbbr}` : `${teamAbbr} @ ${game.opponent}`;
                 
@@ -1157,7 +1173,7 @@
                             <div class="countdown-label">Mins</div>
                         </div>
                     </div>
-                    <div class="game-datetime">${dateStr} at ${timeStr}</div>
+                    <div class="game-datetime">${local.full} at ${local.time}</div>
                 `;
             } catch (e) {
                 container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
