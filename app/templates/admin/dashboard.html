@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Boxscore Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --bg-hover: #22222e;
+            --accent-orange: #ff6b35;
+            --accent-blue: #4ecdc4;
+            --accent-purple: #a855f7;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-yellow: #eab308;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2d2d3a;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(78, 205, 196, 0.06) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .season-badge {
+            background: var(--bg-card);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--accent-blue);
+            border: 1px solid var(--border);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-orange);
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .card-icon.orange { background: rgba(255, 107, 53, 0.15); }
+        .card-icon.blue { background: rgba(78, 205, 196, 0.15); }
+        .card-icon.purple { background: rgba(168, 85, 247, 0.15); }
+        .card-icon.green { background: rgba(34, 197, 94, 0.15); }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .section {
+            margin-bottom: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-orange);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-btn .icon {
+            font-size: 1.25rem;
+        }
+
+        .action-btn.small {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            min-width: 180px;
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            min-width: 80px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--accent-green); }
+        .toast.error { border-color: var(--accent-red); }
+
+        .log-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            border: 1px solid var(--border);
+        }
+
+        .log-entry {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .log-message {
+            color: var(--text-secondary);
+        }
+
+        .log-message.success { color: var(--accent-green); }
+        .log-message.error { color: var(--accent-red); }
+
+        /* API Tester Section */
+        .api-tester {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .api-tester h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .api-tester h3 .method {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(78, 205, 196, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .api-tester h3 .method.post {
+            background: rgba(234, 179, 8, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .result-container {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid var(--border);
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-container pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .result-container .error {
+            color: var(--accent-red);
+        }
+
+        .result-container .loading {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .api-path {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .api-path .method-badge {
+            background: rgba(78, 205, 196, 0.2);
+            color: var(--accent-blue);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .api-path .path {
+            color: var(--accent-orange);
+            flex: 1;
+        }
+
+        .api-path .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .api-path .copy-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-orange);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .badge.win { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+        .badge.loss { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🏀</div>
+                <div>
+                    <h1>Boxscore Admin</h1>
+                    <span>NBA Data Management Console</span>
+                </div>
+            </div>
+            <div class="season-badge">Season {{ settings.current_season }}</div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab active" data-tab="api-tester">🧪 API Tester</button>
+            <button class="tab" data-tab="data-management">📊 Data Management</button>
+            <button class="tab" data-tab="cache-metrics">⚡ Cache & Metrics</button>
+        </div>
+
+        <!-- API Tester Tab -->
+        <div class="tab-content active" id="tab-api-tester">
+            <!-- Teams API -->
+            <div class="api-tester">
+                <h3><span class="method">GET</span> Teams API</h3>
+                <div class="input-group">
+                    <select id="teams-endpoint">
+                        <option value="list">List All Teams</option>
+                        <option value="by-id">Get Team by ID</option>
+                        <option value="by-abbr">Get Team by Abbreviation</option>
+                        <option value="next-games">Next Games</option>
+                        <option value="last-games">Last Games</option>
+                        <option value="standings">Team Standings</option>
+                        <option value="conference">Conference Standings</option>
+                    </select>
+                    <select id="teams-team-select" style="display:none;">
+                        <option value="">Select team...</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}">{{ team.name }} ({{ team.abbreviation }})</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" id="teams-abbr-input" placeholder="e.g. GSW" style="display:none; width:100px;">
+                    <select id="teams-conference" style="display:none;">
+                        <option value="East">Eastern</option>
+                        <option value="West">Western</option>
+                    </select>
+                    <input type="number" id="teams-count" value="5" min="1" max="20" style="display:none;">
+                    <button class="action-btn small" onclick="testTeamsAPI()">
+                        <span class="icon">▶️</span> Run
+                    </button>
+                </div>
+                <div class="result-container" id="teams-result">
+                    <pre></pre>
+                </div>
+            </div>
+
+            <!-- Players API -->
+            <div class="api-tester">
+                <h3><span class="method">GET</span> Players API</h3>
+                <div class="input-group">
+                    <select id="players-endpoint">
+                        <option value="search">Search Players</option>
+                        <option value="info">Player Info</option>
+                        <option value="season-averages">Season Averages</option>
+                        <option value="latest-game">Latest Game</option>
+                    </select>
+                    <input type="text" id="players-search" placeholder="Search name (e.g. curry, lebron)..." style="width:220px;">
+                    <input type="number" id="players-nba-id" placeholder="NBA Player ID (e.g. 201939)" style="display:none; width:200px;">
+                    <button class="action-btn small" onclick="testPlayersAPI()">
+                        <span class="icon">▶️</span> Run
+                    </button>
+                </div>
+                <p id="players-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    💡 Search for a player to find their NBA ID. Use that ID directly for stats endpoints.
+                </p>
+                <div class="result-container" id="players-result">
+                    <pre></pre>
+                </div>
+            </div>
+
+            <!-- Common NBA Player IDs Reference -->
+            <div class="api-tester">
+                <h3><span class="method">REF</span> Common NBA Player IDs</h3>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+                        <span>Stephen Curry: <strong style="color: var(--accent-blue);">201939</strong></span>
+                        <span>LeBron James: <strong style="color: var(--accent-blue);">2544</strong></span>
+                        <span>Kevin Durant: <strong style="color: var(--accent-blue);">201142</strong></span>
+                        <span>Jayson Tatum: <strong style="color: var(--accent-blue);">1628369</strong></span>
+                        <span>Luka Dončić: <strong style="color: var(--accent-blue);">1629029</strong></span>
+                        <span>Giannis: <strong style="color: var(--accent-blue);">203507</strong></span>
+                        <span>Nikola Jokić: <strong style="color: var(--accent-blue);">203999</strong></span>
+                        <span>Joel Embiid: <strong style="color: var(--accent-blue);">203954</strong></span>
+                    </div>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem;">
+                    💡 Use these IDs directly in your Swift app! Players are auto-created on first request.
+                </p>
+            </div>
+
+            <!-- Admin Inspect -->
+            <div class="api-tester">
+                <h3><span class="method">GET</span> Inspect Data</h3>
+                <div class="input-group">
+                    <select id="inspect-type">
+                        <option value="team">Inspect Team</option>
+                        <option value="player">Inspect Player</option>
+                    </select>
+                    <select id="inspect-team-select">
+                        <option value="">Select team...</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}">{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" id="inspect-player-id" placeholder="Player ID" style="display:none; width:100px;">
+                    <button class="action-btn small" onclick="inspectData()">
+                        <span class="icon">🔍</span> Inspect
+                    </button>
+                </div>
+                <div class="result-container" id="inspect-result">
+                    <pre></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management Tab -->
+        <div class="tab-content" id="tab-data-management">
+            <div class="section">
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="refreshTeams()">
+                        <span class="icon">🏟️</span>
+                        <span>Seed Teams</span>
+                    </button>
+                    <button class="action-btn" onclick="refreshStandings()">
+                        <span class="icon">📊</span>
+                        <span>Refresh Standings</span>
+                    </button>
+                    <button class="action-btn" onclick="clearCache()">
+                        <span class="icon">🗑️</span>
+                        <span>Clear Cache</span>
+                    </button>
+                    <button class="action-btn" onclick="resetMetrics()">
+                        <span class="icon">🔄</span>
+                        <span>Reset Metrics</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Team Data Refresh</h2>
+                <div class="input-group">
+                    <select id="refresh-team-select">
+                        <option value="">Select a team...</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}">{{ team.name }} ({{ team.abbreviation }})</option>
+                        {% endfor %}
+                    </select>
+                    <button class="action-btn" onclick="refreshTeamGames()">
+                        <span class="icon">📅</span>
+                        <span>Refresh Games</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Activity Log</h2>
+                <div class="log-container" id="activity-log">
+                    <div class="log-entry">
+                        <span class="log-time">--:--:--</span>
+                        <span class="log-message">Admin console loaded</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache & Metrics Tab -->
+        <div class="tab-content" id="tab-cache-metrics">
+            <div class="section">
+                <h2 class="section-title">Cache Metrics</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="cache-hits">{{ metrics.hits }}</div>
+                        <div class="metric-label">Cache Hits</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="cache-misses">{{ metrics.misses }}</div>
+                        <div class="metric-label">Cache Misses</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="upstream-calls">{{ metrics.upstream_calls }}</div>
+                        <div class="metric-label">API Calls</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="hit-rate">{{ metrics.hit_rate_pct }}%</div>
+                        <div class="metric-label">Hit Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Database Stats</h2>
+                <div class="result-container show" id="db-stats-result">
+                    <pre>Loading...</pre>
+                </div>
+                <button class="action-btn" style="margin-top: 1rem;" onclick="loadDbStats()">
+                    <span class="icon">🔄</span>
+                    <span>Refresh Stats</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <span id="toast-message"></span>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Dynamic form updates
+        document.getElementById('teams-endpoint').addEventListener('change', function() {
+            const teamSelect = document.getElementById('teams-team-select');
+            const abbrInput = document.getElementById('teams-abbr-input');
+            const conferenceSelect = document.getElementById('teams-conference');
+            const countInput = document.getElementById('teams-count');
+            
+            teamSelect.style.display = 'none';
+            abbrInput.style.display = 'none';
+            conferenceSelect.style.display = 'none';
+            countInput.style.display = 'none';
+            
+            switch(this.value) {
+                case 'by-id':
+                case 'next-games':
+                case 'last-games':
+                case 'standings':
+                    teamSelect.style.display = 'block';
+                    if (this.value === 'next-games' || this.value === 'last-games') {
+                        countInput.style.display = 'block';
+                    }
+                    break;
+                case 'by-abbr':
+                    abbrInput.style.display = 'block';
+                    break;
+                case 'conference':
+                    conferenceSelect.style.display = 'block';
+                    break;
+            }
+        });
+
+        document.getElementById('players-endpoint').addEventListener('change', function() {
+            const searchInput = document.getElementById('players-search');
+            const nbaIdInput = document.getElementById('players-nba-id');
+            const hint = document.getElementById('players-hint');
+            
+            searchInput.style.display = 'none';
+            nbaIdInput.style.display = 'none';
+            
+            switch(this.value) {
+                case 'search':
+                    searchInput.style.display = 'block';
+                    hint.textContent = '💡 Search for a player to find their NBA ID. Use that ID directly for stats endpoints.';
+                    break;
+                case 'info':
+                    nbaIdInput.style.display = 'block';
+                    hint.textContent = '💡 Enter NBA Player ID (e.g. 201939 for Curry). Player auto-created on first request.';
+                    break;
+                case 'season-averages':
+                    nbaIdInput.style.display = 'block';
+                    hint.textContent = '💡 Enter NBA Player ID. Returns PPG, RPG, APG, BPG, SPG for current season.';
+                    break;
+                case 'latest-game':
+                    nbaIdInput.style.display = 'block';
+                    hint.textContent = '💡 Enter NBA Player ID. Returns most recent game stats.';
+                    break;
+            }
+        });
+
+        document.getElementById('inspect-type').addEventListener('change', function() {
+            const teamSelect = document.getElementById('inspect-team-select');
+            const playerInput = document.getElementById('inspect-player-id');
+            
+            if (this.value === 'team') {
+                teamSelect.style.display = 'block';
+                playerInput.style.display = 'none';
+            } else {
+                teamSelect.style.display = 'none';
+                playerInput.style.display = 'block';
+            }
+        });
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-message ${type}">${message}</span>
+            `;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toast.className = `toast ${type} show`;
+            toastMessage.textContent = message;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showResult(containerId, data, isError = false) {
+            const container = document.getElementById(containerId);
+            const pre = container.querySelector('pre');
+            container.classList.add('show');
+            
+            if (isError) {
+                pre.innerHTML = `<span class="error">${JSON.stringify(data, null, 2)}</span>`;
+            } else {
+                pre.textContent = JSON.stringify(data, null, 2);
+            }
+        }
+
+        function showLoading(containerId) {
+            const container = document.getElementById(containerId);
+            const pre = container.querySelector('pre');
+            container.classList.add('show');
+            pre.innerHTML = '<span class="loading">Loading...</span>';
+        }
+
+        async function apiCall(endpoint, method = 'GET') {
+            const response = await fetch(`${API_BASE}${endpoint}`, { method });
+            const data = await response.json();
+            if (!response.ok) throw { status: response.status, ...data };
+            return data;
+        }
+
+        // Teams API
+        async function testTeamsAPI() {
+            const endpoint = document.getElementById('teams-endpoint').value;
+            const teamId = document.getElementById('teams-team-select').value;
+            const abbr = document.getElementById('teams-abbr-input').value;
+            const conference = document.getElementById('teams-conference').value;
+            const count = document.getElementById('teams-count').value;
+            
+            showLoading('teams-result');
+            
+            try {
+                let url;
+                switch(endpoint) {
+                    case 'list':
+                        url = '/teams';
+                        break;
+                    case 'by-id':
+                        if (!teamId) throw { detail: 'Please select a team' };
+                        url = `/teams/${teamId}`;
+                        break;
+                    case 'by-abbr':
+                        if (!abbr) throw { detail: 'Please enter abbreviation' };
+                        url = `/teams/abbr/${abbr.toUpperCase()}`;
+                        break;
+                    case 'next-games':
+                        if (!teamId) throw { detail: 'Please select a team' };
+                        url = `/teams/${teamId}/next-games?count=${count}`;
+                        break;
+                    case 'last-games':
+                        if (!teamId) throw { detail: 'Please select a team' };
+                        url = `/teams/${teamId}/last-games?count=${count}`;
+                        break;
+                    case 'standings':
+                        if (!teamId) throw { detail: 'Please select a team' };
+                        url = `/teams/${teamId}/standings`;
+                        break;
+                    case 'conference':
+                        url = `/teams/standings/${conference}`;
+                        break;
+                }
+                
+                const data = await apiCall(url);
+                showResult('teams-result', data);
+                log(`Teams API: ${endpoint} - Success`, 'success');
+            } catch (e) {
+                showResult('teams-result', e, true);
+                log(`Teams API: ${endpoint} - Error: ${e.detail || e.message}`, 'error');
+            }
+        }
+
+        // Players API
+        async function testPlayersAPI() {
+            const endpoint = document.getElementById('players-endpoint').value;
+            const searchName = document.getElementById('players-search').value;
+            const nbaPlayerId = document.getElementById('players-nba-id').value;
+            
+            showLoading('players-result');
+            
+            try {
+                let url;
+                switch(endpoint) {
+                    case 'search':
+                        if (!searchName || searchName.length < 2) throw { detail: 'Enter at least 2 characters' };
+                        url = `/players/search?name=${encodeURIComponent(searchName)}`;
+                        break;
+                    case 'info':
+                        if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
+                        url = `/players/${nbaPlayerId}/info`;
+                        break;
+                    case 'season-averages':
+                        if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
+                        url = `/players/${nbaPlayerId}/season-averages`;
+                        break;
+                    case 'latest-game':
+                        if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
+                        url = `/players/${nbaPlayerId}/latest-game`;
+                        break;
+                }
+                
+                const data = await apiCall(url);
+                showResult('players-result', data);
+                log(`Players API: ${endpoint} - Success`, 'success');
+            } catch (e) {
+                showResult('players-result', e, true);
+                log(`Players API: ${endpoint} - Error: ${e.detail || e.message}`, 'error');
+            }
+        }
+
+        // Inspect Data
+        async function inspectData() {
+            const type = document.getElementById('inspect-type').value;
+            const teamId = document.getElementById('inspect-team-select').value;
+            const playerId = document.getElementById('inspect-player-id').value;
+            
+            showLoading('inspect-result');
+            
+            try {
+                let url;
+                if (type === 'team') {
+                    if (!teamId) throw { detail: 'Please select a team' };
+                    url = `/admin/teams/${teamId}/inspect`;
+                } else {
+                    if (!playerId) throw { detail: 'Please enter player ID' };
+                    url = `/admin/players/${playerId}/inspect`;
+                }
+                
+                const data = await apiCall(url);
+                showResult('inspect-result', data);
+                log(`Inspected ${type}: Success`, 'success');
+            } catch (e) {
+                showResult('inspect-result', e, true);
+                log(`Inspect failed: ${e.detail || e.message}`, 'error');
+            }
+        }
+
+        // Admin Actions
+        async function refreshTeams() {
+            log('Seeding teams...');
+            try {
+                const data = await apiCall('/admin/refresh/teams', 'POST');
+                log(`Teams seeded: ${data.teams_added} added`, 'success');
+                showToast(`${data.teams_added} teams added`);
+                setTimeout(() => location.reload(), 1000);
+            } catch (e) {
+                log(`Error: ${e.detail || e.message}`, 'error');
+                showToast(e.detail || 'Failed', 'error');
+            }
+        }
+
+        async function refreshStandings() {
+            log('Refreshing standings...');
+            showToast('Refreshing standings... (this may take a moment)');
+            try {
+                const data = await apiCall('/admin/refresh/standings', 'POST');
+                log(`Standings updated: ${data.standings_updated}`, 'success');
+                showToast('Standings refreshed');
+            } catch (e) {
+                log(`Error: ${e.detail || e.message}`, 'error');
+                showToast(e.detail || 'Failed', 'error');
+            }
+        }
+
+        async function clearCache() {
+            log('Clearing cache...');
+            try {
+                const data = await apiCall('/admin/cache/clear?pattern=*', 'POST');
+                log(`Cache cleared: ${data.keys_deleted} keys deleted`, 'success');
+                showToast('Cache cleared');
+            } catch (e) {
+                log(`Error: ${e.detail || e.message}`, 'error');
+                showToast(e.detail || 'Failed', 'error');
+            }
+        }
+
+        async function resetMetrics() {
+            log('Resetting metrics...');
+            try {
+                await apiCall('/admin/metrics/reset', 'POST');
+                log('Metrics reset', 'success');
+                showToast('Metrics reset');
+                updateMetrics();
+            } catch (e) {
+                log(`Error: ${e.detail || e.message}`, 'error');
+                showToast(e.detail || 'Failed', 'error');
+            }
+        }
+
+        async function refreshTeamGames() {
+            const teamId = document.getElementById('refresh-team-select').value;
+            if (!teamId) {
+                showToast('Please select a team', 'error');
+                return;
+            }
+            log(`Refreshing games for team ${teamId}...`);
+            showToast('Refreshing games... (this may take a moment)');
+            try {
+                const data = await apiCall(`/admin/refresh/team/${teamId}/games`, 'POST');
+                log(`Games refreshed for ${data.team}: ${data.games_added} added`, 'success');
+                showToast(`${data.games_added} games added for ${data.team}`);
+                updateStats();
+            } catch (e) {
+                log(`Error: ${e.detail || e.message}`, 'error');
+                showToast(e.detail || 'Failed', 'error');
+            }
+        }
+
+        async function updateMetrics() {
+            try {
+                const data = await fetch(`${API_BASE}/admin/metrics`).then(r => r.json());
+                document.getElementById('cache-hits').textContent = data.cache.hits;
+                document.getElementById('cache-misses').textContent = data.cache.misses;
+                document.getElementById('upstream-calls').textContent = data.cache.upstream_calls;
+                document.getElementById('hit-rate').textContent = data.cache.hit_rate_pct + '%';
+                document.getElementById('stat-hit-rate').textContent = data.cache.hit_rate_pct + '%';
+                document.getElementById('stat-hits').textContent = data.cache.hits;
+                document.getElementById('stat-total').textContent = data.cache.total_requests;
+            } catch (e) {
+                console.error('Failed to update metrics:', e);
+            }
+        }
+
+        async function updateStats() {
+            try {
+                const data = await fetch(`${API_BASE}/admin/stats`).then(r => r.json());
+                document.getElementById('stat-teams').textContent = data.tables.teams;
+                document.getElementById('stat-players').textContent = data.tables.players;
+                document.getElementById('stat-games').textContent = data.tables.games;
+            } catch (e) {
+                console.error('Failed to update stats:', e);
+            }
+        }
+
+        async function loadDbStats() {
+            try {
+                const data = await apiCall('/admin/stats');
+                showResult('db-stats-result', data);
+            } catch (e) {
+                showResult('db-stats-result', e, true);
+            }
+        }
+
+        // Initial load
+        loadDbStats();
+        setInterval(updateMetrics, 10000);
+    </script>
+</body>
+</html>
