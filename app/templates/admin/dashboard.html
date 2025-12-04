@@ -575,6 +575,11 @@
                         <span class="icon">▶️</span> Run
                     </button>
                 </div>
+                <div class="api-path">
+                    <span class="method-badge">GET</span>
+                    <span class="path" id="teams-api-path">/api/teams</span>
+                    <button class="copy-btn" onclick="copyPath('teams-api-path')">📋 Copy</button>
+                </div>
                 <div class="result-container" id="teams-result">
                     <pre></pre>
                 </div>
@@ -595,6 +600,11 @@
                     <button class="action-btn small" onclick="testPlayersAPI()">
                         <span class="icon">▶️</span> Run
                     </button>
+                </div>
+                <div class="api-path">
+                    <span class="method-badge">GET</span>
+                    <span class="path" id="players-api-path">/api/players/search?name={name}</span>
+                    <button class="copy-btn" onclick="copyPath('players-api-path')">📋 Copy</button>
                 </div>
                 <p id="players-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
                     💡 Search for a player to find their NBA ID. Use that ID directly for stats endpoints.
@@ -622,30 +632,6 @@
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem;">
                     💡 Use these IDs directly in your Swift app! Players are auto-created on first request.
                 </p>
-            </div>
-
-            <!-- Admin Inspect -->
-            <div class="api-tester">
-                <h3><span class="method">GET</span> Inspect Data</h3>
-                <div class="input-group">
-                    <select id="inspect-type">
-                        <option value="team">Inspect Team</option>
-                        <option value="player">Inspect Player</option>
-                    </select>
-                    <select id="inspect-team-select">
-                        <option value="">Select team...</option>
-                        {% for team in teams %}
-                        <option value="{{ team.id }}">{{ team.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <input type="number" id="inspect-player-id" placeholder="Player ID" style="display:none; width:100px;">
-                    <button class="action-btn small" onclick="inspectData()">
-                        <span class="icon">🔍</span> Inspect
-                    </button>
-                </div>
-                <div class="result-container" id="inspect-result">
-                    <pre></pre>
-                </div>
             </div>
         </div>
 
@@ -754,6 +740,48 @@
             });
         });
 
+        // Helper to update API path display
+        function updateTeamsApiPath() {
+            const endpoint = document.getElementById('teams-endpoint').value;
+            const teamId = document.getElementById('teams-team-select').value || '{team_id}';
+            const abbr = document.getElementById('teams-abbr-input').value || '{abbr}';
+            const conference = document.getElementById('teams-conference').value;
+            const count = document.getElementById('teams-count').value;
+            
+            let path = '/api/teams';
+            switch(endpoint) {
+                case 'list': path = '/api/teams'; break;
+                case 'by-id': path = `/api/teams/${teamId}`; break;
+                case 'by-abbr': path = `/api/teams/abbr/${abbr.toUpperCase() || '{ABBR}'}`; break;
+                case 'next-games': path = `/api/teams/${teamId}/next-games?count=${count}`; break;
+                case 'last-games': path = `/api/teams/${teamId}/last-games?count=${count}`; break;
+                case 'standings': path = `/api/teams/${teamId}/standings`; break;
+                case 'conference': path = `/api/teams/standings/${conference}`; break;
+            }
+            document.getElementById('teams-api-path').textContent = path;
+        }
+
+        function updatePlayersApiPath() {
+            const endpoint = document.getElementById('players-endpoint').value;
+            const searchName = document.getElementById('players-search').value || '{name}';
+            const nbaId = document.getElementById('players-nba-id').value || '{nba_player_id}';
+            
+            let path = '/api/players/search?name={name}';
+            switch(endpoint) {
+                case 'search': path = `/api/players/search?name=${encodeURIComponent(searchName)}`; break;
+                case 'info': path = `/api/players/${nbaId}/info`; break;
+                case 'season-averages': path = `/api/players/${nbaId}/season-averages`; break;
+                case 'latest-game': path = `/api/players/${nbaId}/latest-game`; break;
+            }
+            document.getElementById('players-api-path').textContent = path;
+        }
+
+        function copyPath(elementId) {
+            const path = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(path);
+            showToast('Path copied to clipboard!');
+        }
+
         // Dynamic form updates
         document.getElementById('teams-endpoint').addEventListener('change', function() {
             const teamSelect = document.getElementById('teams-team-select');
@@ -783,7 +811,14 @@
                     conferenceSelect.style.display = 'block';
                     break;
             }
+            updateTeamsApiPath();
         });
+
+        // Update path when team selection changes
+        document.getElementById('teams-team-select').addEventListener('change', updateTeamsApiPath);
+        document.getElementById('teams-abbr-input').addEventListener('input', updateTeamsApiPath);
+        document.getElementById('teams-conference').addEventListener('change', updateTeamsApiPath);
+        document.getElementById('teams-count').addEventListener('input', updateTeamsApiPath);
 
         document.getElementById('players-endpoint').addEventListener('change', function() {
             const searchInput = document.getElementById('players-search');
@@ -811,20 +846,12 @@
                     hint.textContent = '💡 Enter NBA Player ID. Returns most recent game stats.';
                     break;
             }
+            updatePlayersApiPath();
         });
 
-        document.getElementById('inspect-type').addEventListener('change', function() {
-            const teamSelect = document.getElementById('inspect-team-select');
-            const playerInput = document.getElementById('inspect-player-id');
-            
-            if (this.value === 'team') {
-                teamSelect.style.display = 'block';
-                playerInput.style.display = 'none';
-            } else {
-                teamSelect.style.display = 'none';
-                playerInput.style.display = 'block';
-            }
-        });
+        // Update path when player inputs change
+        document.getElementById('players-search').addEventListener('input', updatePlayersApiPath);
+        document.getElementById('players-nba-id').addEventListener('input', updatePlayersApiPath);
 
         function log(message, type = 'info') {
             const logContainer = document.getElementById('activity-log');
@@ -960,33 +987,6 @@
             }
         }
 
-        // Inspect Data
-        async function inspectData() {
-            const type = document.getElementById('inspect-type').value;
-            const teamId = document.getElementById('inspect-team-select').value;
-            const playerId = document.getElementById('inspect-player-id').value;
-            
-            showLoading('inspect-result');
-            
-            try {
-                let url;
-                if (type === 'team') {
-                    if (!teamId) throw { detail: 'Please select a team' };
-                    url = `/admin/teams/${teamId}/inspect`;
-                } else {
-                    if (!playerId) throw { detail: 'Please enter player ID' };
-                    url = `/admin/players/${playerId}/inspect`;
-                }
-                
-                const data = await apiCall(url);
-                showResult('inspect-result', data);
-                log(`Inspected ${type}: Success`, 'success');
-            } catch (e) {
-                showResult('inspect-result', e, true);
-                log(`Inspect failed: ${e.detail || e.message}`, 'error');
-            }
-        }
-
         // Admin Actions
         async function refreshTeams() {
             log('Seeding teams...');
@@ -1051,7 +1051,6 @@
                 const data = await apiCall(`/admin/refresh/team/${teamId}/games`, 'POST');
                 log(`Games refreshed for ${data.team}: ${data.games_added} added`, 'success');
                 showToast(`${data.games_added} games added for ${data.team}`);
-                updateStats();
             } catch (e) {
                 log(`Error: ${e.detail || e.message}`, 'error');
                 showToast(e.detail || 'Failed', 'error');
@@ -1065,22 +1064,8 @@
                 document.getElementById('cache-misses').textContent = data.cache.misses;
                 document.getElementById('upstream-calls').textContent = data.cache.upstream_calls;
                 document.getElementById('hit-rate').textContent = data.cache.hit_rate_pct + '%';
-                document.getElementById('stat-hit-rate').textContent = data.cache.hit_rate_pct + '%';
-                document.getElementById('stat-hits').textContent = data.cache.hits;
-                document.getElementById('stat-total').textContent = data.cache.total_requests;
             } catch (e) {
                 console.error('Failed to update metrics:', e);
-            }
-        }
-
-        async function updateStats() {
-            try {
-                const data = await fetch(`${API_BASE}/admin/stats`).then(r => r.json());
-                document.getElementById('stat-teams').textContent = data.tables.teams;
-                document.getElementById('stat-players').textContent = data.tables.players;
-                document.getElementById('stat-games').textContent = data.tables.games;
-            } catch (e) {
-                console.error('Failed to update stats:', e);
             }
         }
 
