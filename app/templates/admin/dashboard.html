@@ -98,161 +98,6 @@
             border: 1px solid var(--border);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            transition: all 0.2s ease;
-        }
-
-        .card:hover {
-            border-color: var(--accent-orange);
-            box-shadow: var(--shadow);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .card-title {
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .card-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .card-icon.orange { background: rgba(255, 107, 53, 0.15); }
-        .card-icon.blue { background: rgba(78, 205, 196, 0.15); }
-        .card-icon.purple { background: rgba(168, 85, 247, 0.15); }
-        .card-icon.green { background: rgba(34, 197, 94, 0.15); }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .section {
-            margin-bottom: 2.5rem;
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 20px;
-            background: var(--accent-orange);
-            border-radius: 2px;
-        }
-
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-
-        .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 1.25rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .action-btn:hover {
-            background: var(--bg-hover);
-            border-color: var(--accent-orange);
-            transform: translateY(-2px);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .action-btn .icon {
-            font-size: 1.25rem;
-        }
-
-        .action-btn.small {
-            padding: 0.75rem 1rem;
-            font-size: 0.875rem;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-        }
-
-        .metric-card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .metric-value {
-            font-size: 1.75rem;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--accent-blue);
-        }
-
-        .metric-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.25rem;
-        }
-
         .input-group {
             display: flex;
             gap: 0.75rem;
@@ -282,6 +127,33 @@
             border-color: var(--accent-orange);
         }
 
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-orange);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.small {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+        }
+
         .toast {
             position: fixed;
             bottom: 2rem;
@@ -307,40 +179,6 @@
 
         .toast.success { border-color: var(--accent-green); }
         .toast.error { border-color: var(--accent-red); }
-
-        .log-container {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1rem;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8125rem;
-            border: 1px solid var(--border);
-        }
-
-        .log-entry {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 1rem;
-        }
-
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .log-time {
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        .log-message {
-            color: var(--text-secondary);
-        }
-
-        .log-message.success { color: var(--accent-green); }
-        .log-message.error { color: var(--accent-red); }
 
         /* API Tester Section */
         .api-tester {
@@ -368,11 +206,6 @@
             border-radius: 4px;
             background: rgba(78, 205, 196, 0.2);
             color: var(--accent-blue);
-        }
-
-        .api-tester h3 .method.post {
-            background: rgba(234, 179, 8, 0.2);
-            color: var(--accent-yellow);
         }
 
         .result-container {
@@ -490,37 +323,325 @@
             display: block;
         }
 
-        .spinner {
-            width: 18px;
-            height: 18px;
+        /* Widget Styles */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .widget {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+        }
+
+        .widget-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .widget-title .badge {
+            background: var(--accent-orange);
+            color: white;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+        }
+
+        /* Widget 1: Next Games */
+        .next-games-widget .team-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .next-games-widget .team-abbr {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .next-games-widget .team-record {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .next-games-widget .game-row {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .next-games-widget .game-row:last-child {
+            border-bottom: none;
+        }
+
+        .next-games-widget .game-vs {
+            color: var(--text-muted);
+            width: 25px;
+        }
+
+        .next-games-widget .game-opponent {
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .next-games-widget .game-opponent-record {
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .next-games-widget .game-datetime {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Widget 2: Season Average */
+        .season-avg-widget .player-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .season-avg-widget .player-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .season-avg-widget .player-number {
+            background: var(--accent-orange);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .season-avg-widget .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+        }
+
+        .season-avg-widget .stat {
+            background: var(--bg-secondary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        .season-avg-widget .stat-value {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .season-avg-widget .stat-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        /* Widget 3: Last Results */
+        .last-results-widget .result-row {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .last-results-widget .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .last-results-widget .result-teams {
+            flex: 1;
+        }
+
+        .last-results-widget .result-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .last-results-widget .result-score.win {
+            color: var(--accent-green);
+        }
+
+        .last-results-widget .result-score.loss {
+            color: var(--accent-red);
+        }
+
+        .last-results-widget .result-date {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-left: 1rem;
+        }
+
+        /* Widget 4: Team Standing */
+        .team-standing-widget .team-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 0.75rem;
+        }
+
+        .team-standing-widget .standing-info {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+        }
+
+        .team-standing-widget .record {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .team-standing-widget .rank {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Widget 5: Player Last Game */
+        .player-last-game-widget .player-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .player-last-game-widget .player-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .player-last-game-widget .player-number {
+            background: var(--accent-orange);
+            color: white;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-last-game-widget .stats-line {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .player-last-game-widget .stats-line .stat-value {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .player-last-game-widget .game-result {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .player-last-game-widget .game-result .score {
+            font-weight: 600;
+        }
+
+        /* Widget 6: Countdown */
+        .countdown-widget .matchup {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+
+        .countdown-widget .matchup .vs {
+            color: var(--text-muted);
+            font-weight: 400;
+            margin: 0 0.5rem;
+        }
+
+        .countdown-widget .countdown-display {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .countdown-widget .countdown-item {
+            text-align: center;
+        }
+
+        .countdown-widget .countdown-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+
+        .countdown-widget .countdown-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .countdown-widget .game-datetime {
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+        }
+
+        .widget-controls {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .widget-controls h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
             border: 2px solid var(--border);
             border-top-color: var(--accent-orange);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            display: inline-block;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .badge.win { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
-        .badge.loss { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
-
         @media (max-width: 768px) {
             .container { padding: 1rem; }
-            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
             header { flex-direction: column; gap: 1rem; align-items: flex-start; }
             .tabs { flex-wrap: wrap; }
+            .widgets-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -539,13 +660,86 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab active" data-tab="api-tester">🧪 API Tester</button>
-            <button class="tab" data-tab="data-management">📊 Data Management</button>
+            <button class="tab active" data-tab="widgets">📱 Widgets</button>
+            <button class="tab" data-tab="api-tester">🧪 API Tester</button>
             <button class="tab" data-tab="cache-metrics">⚡ Cache & Metrics</button>
         </div>
 
+        <!-- Widgets Tab -->
+        <div class="tab-content active" id="tab-widgets">
+            <!-- Widget Controls -->
+            <div class="widget-controls">
+                <h3>🎮 Widget Preview Controls</h3>
+                <div class="input-group">
+                    <select id="widget-team">
+                        {% for team in teams %}
+                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}" {% if team.abbreviation == 'GSW' %}selected{% endif %}>{{ team.name }} ({{ team.abbreviation }})</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" id="widget-player-id" value="201939" placeholder="NBA Player ID" style="width: 150px;">
+                    <button class="action-btn small" onclick="loadAllWidgets()">
+                        <span class="icon">🔄</span> Load Widgets
+                    </button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    💡 Default: GSW + Stephen Curry (201939). Change team/player and click Load.
+                </p>
+            </div>
+
+            <!-- Widgets Grid -->
+            <div class="widgets-grid">
+                <!-- Widget 1: Next 3 Games -->
+                <div class="widget next-games-widget" id="widget-next-games">
+                    <div class="widget-title"><span class="badge">1</span> Next 3 Games</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+
+                <!-- Widget 2: Season Average -->
+                <div class="widget season-avg-widget" id="widget-season-avg">
+                    <div class="widget-title"><span class="badge">2</span> Season Average</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+
+                <!-- Widget 3: Last 3 Results -->
+                <div class="widget last-results-widget" id="widget-last-results">
+                    <div class="widget-title"><span class="badge">3</span> Last 3 Results</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+
+                <!-- Widget 4: Team Standing -->
+                <div class="widget team-standing-widget" id="widget-standing">
+                    <div class="widget-title"><span class="badge">4</span> Team Standing</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+
+                <!-- Widget 5: Player Last Game -->
+                <div class="widget player-last-game-widget" id="widget-player-last">
+                    <div class="widget-title"><span class="badge">5</span> Player Last Game</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+
+                <!-- Widget 6: Countdown -->
+                <div class="widget countdown-widget" id="widget-countdown">
+                    <div class="widget-title"><span class="badge">6</span> Countdown to Next Game</div>
+                    <div class="widget-content">
+                        <div class="loading-spinner"></div> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- API Tester Tab -->
-        <div class="tab-content active" id="tab-api-tester">
+        <div class="tab-content" id="tab-api-tester">
             <!-- Teams API -->
             <div class="api-tester">
                 <h3><span class="method">GET</span> Teams API</h3>
@@ -636,79 +830,32 @@
             </div>
         </div>
 
-        <!-- Data Management Tab -->
-        <div class="tab-content" id="tab-data-management">
-            <div class="section">
-                <h2 class="section-title">Quick Actions</h2>
-                <div class="actions-grid">
-                    <button class="action-btn" onclick="refreshStandings()">
-                        <span class="icon">📊</span>
-                        <span>Refresh Standings</span>
-                    </button>
-                    <button class="action-btn" onclick="clearCache()">
-                        <span class="icon">🗑️</span>
-                        <span>Clear Cache</span>
-                    </button>
-                    <button class="action-btn" onclick="resetMetrics()">
-                        <span class="icon">🔄</span>
-                        <span>Reset Metrics</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">Team Data Refresh</h2>
-                <div class="input-group">
-                    <select id="refresh-team-select">
-                        <option value="">Select a team...</option>
-                        {% for team in teams %}
-                        <option value="{{ team.id }}">{{ team.name }} ({{ team.abbreviation }})</option>
-                        {% endfor %}
-                    </select>
-                    <button class="action-btn" onclick="refreshTeamGames()">
-                        <span class="icon">📅</span>
-                        <span>Refresh Games</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">Activity Log</h2>
-                <div class="log-container" id="activity-log">
-                    <div class="log-entry">
-                        <span class="log-time">--:--:--</span>
-                        <span class="log-message">Admin console loaded</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Cache & Metrics Tab -->
         <div class="tab-content" id="tab-cache-metrics">
-            <div class="section">
-                <h2 class="section-title">Cache Metrics</h2>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value" id="cache-hits">{{ metrics.hits }}</div>
-                        <div class="metric-label">Cache Hits</div>
+            <div class="api-tester">
+                <h3>📊 Cache Metrics</h3>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-blue);" id="cache-hits">0</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">CACHE HITS</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="cache-misses">{{ metrics.misses }}</div>
-                        <div class="metric-label">Cache Misses</div>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-orange);" id="cache-misses">0</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">CACHE MISSES</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="upstream-calls">{{ metrics.upstream_calls }}</div>
-                        <div class="metric-label">API Calls</div>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-purple);" id="upstream-calls">0</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">API CALLS</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="hit-rate">{{ metrics.hit_rate_pct }}%</div>
-                        <div class="metric-label">Hit Rate</div>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-green);" id="hit-rate">0%</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">HIT RATE</div>
                     </div>
                 </div>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">Database Stats</h2>
+            <div class="api-tester">
+                <h3>🗄️ Database Stats</h3>
                 <div class="result-container show" id="db-stats-result">
                     <pre>Loading...</pre>
                 </div>
@@ -737,7 +884,236 @@
             });
         });
 
-        // Helper to update API path display
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toast.className = `toast ${type} show`;
+            toastMessage.textContent = message;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function copyPath(elementId) {
+            const path = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(path);
+            showToast('Path copied to clipboard!');
+        }
+
+        // =====================
+        // WIDGET FUNCTIONS
+        // =====================
+
+        async function loadAllWidgets() {
+            const teamId = document.getElementById('widget-team').value;
+            const playerId = document.getElementById('widget-player-id').value;
+            
+            loadNextGamesWidget(teamId);
+            loadSeasonAvgWidget(playerId);
+            loadLastResultsWidget(teamId);
+            loadStandingWidget(teamId);
+            loadPlayerLastGameWidget(playerId);
+            loadCountdownWidget(teamId);
+        }
+
+        async function loadNextGamesWidget(teamId) {
+            const container = document.querySelector('#widget-next-games .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const [gamesData, standingData] = await Promise.all([
+                    fetch(`${API_BASE}/teams/${teamId}/next-games?count=3`).then(r => r.json()),
+                    fetch(`${API_BASE}/teams/${teamId}/standings`).then(r => r.json())
+                ]);
+                
+                const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
+                const record = `${standingData.wins}-${standingData.losses}`;
+                
+                let html = `
+                    <div class="team-header">
+                        <span class="team-abbr">${teamAbbr}</span>
+                        <span class="team-record">(${record})</span>
+                    </div>
+                `;
+                
+                for (const game of gamesData.games) {
+                    const date = new Date(game.date + 'T' + game.time);
+                    const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const vsAt = game.is_home ? 'vs' : '@';
+                    
+                    html += `
+                        <div class="game-row">
+                            <span class="game-vs">${vsAt}</span>
+                            <span class="game-opponent">${game.opponent}</span>
+                            <span class="game-datetime">${dateStr} ${timeStr}</span>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function loadSeasonAvgWidget(playerId) {
+            const container = document.querySelector('#widget-season-avg .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const data = await fetch(`${API_BASE}/players/${playerId}/season-averages`).then(r => r.json());
+                
+                container.innerHTML = `
+                    <div class="player-header">
+                        <span class="player-name">${data.player_name}</span>
+                        <span class="player-number">30</span>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat"><span class="stat-value">${data.ppg}</span><span class="stat-label">ppg</span></div>
+                        <div class="stat"><span class="stat-value">${data.apg}</span><span class="stat-label">apg</span></div>
+                        <div class="stat"><span class="stat-value">${data.rpg}</span><span class="stat-label">rpg</span></div>
+                        <div class="stat"><span class="stat-value">${data.bpg}</span><span class="stat-label">bpg</span></div>
+                        <div class="stat"><span class="stat-value">${data.spg}</span><span class="stat-label">spg</span></div>
+                        <div class="stat"><span class="stat-value">${data.fg_pct}%</span><span class="stat-label">fg</span></div>
+                        <div class="stat"><span class="stat-value">${data.fg3_pct}%</span><span class="stat-label">3fg</span></div>
+                        <div class="stat"><span class="stat-value">${data.ft_pct}%</span><span class="stat-label">ft</span></div>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function loadLastResultsWidget(teamId) {
+            const container = document.querySelector('#widget-last-results .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const data = await fetch(`${API_BASE}/teams/${teamId}/last-games?count=3`).then(r => r.json());
+                const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
+                
+                let html = '';
+                for (const game of data.games) {
+                    const date = new Date(game.date);
+                    const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    const isWin = game.result === 'W';
+                    const scoreClass = isWin ? 'win' : 'loss';
+                    
+                    html += `
+                        <div class="result-row">
+                            <span class="result-teams">${teamAbbr} vs ${game.opponent}</span>
+                            <span class="result-score ${scoreClass}">${game.team_score} - ${game.opponent_score}</span>
+                            <span class="result-date">${dateStr}</span>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function loadStandingWidget(teamId) {
+            const container = document.querySelector('#widget-standing .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const data = await fetch(`${API_BASE}/teams/${teamId}/standings`).then(r => r.json());
+                const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
+                
+                container.innerHTML = `
+                    <div class="team-name">${teamAbbr}</div>
+                    <div class="standing-info">
+                        <span class="record">${data.wins}-${data.losses}</span>
+                        <span class="rank">${data.conference_rank_display} in ${data.conference}</span>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function loadPlayerLastGameWidget(playerId) {
+            const container = document.querySelector('#widget-player-last .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const data = await fetch(`${API_BASE}/players/${playerId}/latest-game`).then(r => r.json());
+                
+                container.innerHTML = `
+                    <div class="player-header">
+                        <span class="player-name">${data.player_name}</span>
+                        <span class="player-number">30</span>
+                    </div>
+                    <div class="stats-line">
+                        <span class="stat-value">${data.pts}</span>pt 
+                        <span class="stat-value">${data.reb}</span>rb 
+                        <span class="stat-value">${data.ast}</span>as 
+                        vs ${data.opponent}
+                    </div>
+                    <div class="game-result">
+                        ${data.game_date}
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function loadCountdownWidget(teamId) {
+            const container = document.querySelector('#widget-countdown .widget-content');
+            container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+            
+            try {
+                const data = await fetch(`${API_BASE}/teams/${teamId}/next-games?count=1`).then(r => r.json());
+                const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
+                
+                if (data.games.length === 0) {
+                    container.innerHTML = 'No upcoming games';
+                    return;
+                }
+                
+                const game = data.games[0];
+                const gameDate = new Date(game.date + 'T' + game.time);
+                const now = new Date();
+                const diff = gameDate - now;
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                
+                const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const timeStr = gameDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                
+                const matchup = game.is_home ? `${game.opponent} vs ${teamAbbr}` : `${teamAbbr} @ ${game.opponent}`;
+                
+                container.innerHTML = `
+                    <div class="matchup">${matchup}</div>
+                    <div class="countdown-display">
+                        <div class="countdown-item">
+                            <div class="countdown-value">${days}</div>
+                            <div class="countdown-label">Days</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-value">${hours}</div>
+                            <div class="countdown-label">Hours</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-value">${mins}</div>
+                            <div class="countdown-label">Mins</div>
+                        </div>
+                    </div>
+                    <div class="game-datetime">${dateStr} at ${timeStr}</div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        // =====================
+        // API TESTER FUNCTIONS
+        // =====================
+
         function updateTeamsApiPath() {
             const endpoint = document.getElementById('teams-endpoint').value;
             const teamId = document.getElementById('teams-team-select').value || '{team_id}';
@@ -774,13 +1150,6 @@
             document.getElementById('players-api-path').textContent = path;
         }
 
-        function copyPath(elementId) {
-            const path = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(path);
-            showToast('Path copied to clipboard!');
-        }
-
-        // Dynamic form updates
         document.getElementById('teams-endpoint').addEventListener('change', function() {
             const teamSelect = document.getElementById('teams-team-select');
             const abbrInput = document.getElementById('teams-abbr-input');
@@ -813,7 +1182,6 @@
             updateTeamsApiPath();
         });
 
-        // Update path when team selection changes
         document.getElementById('teams-team-select').addEventListener('change', updateTeamsApiPath);
         document.getElementById('teams-abbr-input').addEventListener('input', updateTeamsApiPath);
         document.getElementById('teams-conference').addEventListener('change', updateTeamsApiPath);
@@ -830,47 +1198,20 @@
             switch(this.value) {
                 case 'search':
                     searchInput.style.display = 'block';
-                    hint.textContent = '💡 Search for a player to find their NBA ID. Use that ID directly for stats endpoints.';
+                    hint.textContent = '💡 Search for a player to find their NBA ID.';
                     break;
                 case 'info':
-                    nbaIdInput.style.display = 'block';
-                    hint.textContent = '💡 Enter NBA Player ID (e.g. 201939 for Curry). Player auto-created on first request.';
-                    break;
                 case 'season-averages':
-                    nbaIdInput.style.display = 'block';
-                    hint.textContent = '💡 Enter NBA Player ID. Returns PPG, RPG, APG, BPG, SPG for current season.';
-                    break;
                 case 'latest-game':
                     nbaIdInput.style.display = 'block';
-                    hint.textContent = '💡 Enter NBA Player ID. Returns most recent game stats.';
+                    hint.textContent = '💡 Enter NBA Player ID (e.g. 201939 for Curry).';
                     break;
             }
             updatePlayersApiPath();
         });
 
-        // Update path when player inputs change
         document.getElementById('players-search').addEventListener('input', updatePlayersApiPath);
         document.getElementById('players-nba-id').addEventListener('input', updatePlayersApiPath);
-
-        function log(message, type = 'info') {
-            const logContainer = document.getElementById('activity-log');
-            const time = new Date().toLocaleTimeString();
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `
-                <span class="log-time">${time}</span>
-                <span class="log-message ${type}">${message}</span>
-            `;
-            logContainer.insertBefore(entry, logContainer.firstChild);
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            toast.className = `toast ${type} show`;
-            toastMessage.textContent = message;
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
 
         function showResult(containerId, data, isError = false) {
             const container = document.getElementById(containerId);
@@ -898,7 +1239,6 @@
             return data;
         }
 
-        // Teams API
         async function testTeamsAPI() {
             const endpoint = document.getElementById('teams-endpoint').value;
             const teamId = document.getElementById('teams-team-select').value;
@@ -911,48 +1251,36 @@
             try {
                 let url;
                 switch(endpoint) {
-                    case 'list':
-                        url = '/teams';
-                        break;
+                    case 'list': url = '/teams'; break;
                     case 'by-id':
                         if (!teamId) throw { detail: 'Please select a team' };
-                        url = `/teams/${teamId}`;
-                        break;
+                        url = `/teams/${teamId}`; break;
                     case 'by-abbr':
                         if (!abbr) throw { detail: 'Please enter abbreviation' };
-                        url = `/teams/abbr/${abbr.toUpperCase()}`;
-                        break;
+                        url = `/teams/abbr/${abbr.toUpperCase()}`; break;
                     case 'next-games':
                         if (!teamId) throw { detail: 'Please select a team' };
-                        url = `/teams/${teamId}/next-games?count=${count}`;
-                        break;
+                        url = `/teams/${teamId}/next-games?count=${count}`; break;
                     case 'last-games':
                         if (!teamId) throw { detail: 'Please select a team' };
-                        url = `/teams/${teamId}/last-games?count=${count}`;
-                        break;
+                        url = `/teams/${teamId}/last-games?count=${count}`; break;
                     case 'standings':
                         if (!teamId) throw { detail: 'Please select a team' };
-                        url = `/teams/${teamId}/standings`;
-                        break;
+                        url = `/teams/${teamId}/standings`; break;
                     case 'conference':
-                        url = `/teams/standings/${conference}`;
-                        break;
+                        url = `/teams/standings/${conference}`; break;
                     case 'roster':
                         if (!teamId) throw { detail: 'Please select a team' };
-                        url = `/teams/${teamId}/roster`;
-                        break;
+                        url = `/teams/${teamId}/roster`; break;
                 }
                 
                 const data = await apiCall(url);
                 showResult('teams-result', data);
-                log(`Teams API: ${endpoint} - Success`, 'success');
             } catch (e) {
                 showResult('teams-result', e, true);
-                log(`Teams API: ${endpoint} - Error: ${e.detail || e.message}`, 'error');
             }
         }
 
-        // Players API
         async function testPlayersAPI() {
             const endpoint = document.getElementById('players-endpoint').value;
             const searchName = document.getElementById('players-search').value;
@@ -965,85 +1293,22 @@
                 switch(endpoint) {
                     case 'search':
                         if (!searchName || searchName.length < 2) throw { detail: 'Enter at least 2 characters' };
-                        url = `/players/search?name=${encodeURIComponent(searchName)}`;
-                        break;
+                        url = `/players/search?name=${encodeURIComponent(searchName)}`; break;
                     case 'info':
                         if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
-                        url = `/players/${nbaPlayerId}/info`;
-                        break;
+                        url = `/players/${nbaPlayerId}/info`; break;
                     case 'season-averages':
                         if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
-                        url = `/players/${nbaPlayerId}/season-averages`;
-                        break;
+                        url = `/players/${nbaPlayerId}/season-averages`; break;
                     case 'latest-game':
                         if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
-                        url = `/players/${nbaPlayerId}/latest-game`;
-                        break;
+                        url = `/players/${nbaPlayerId}/latest-game`; break;
                 }
                 
                 const data = await apiCall(url);
                 showResult('players-result', data);
-                log(`Players API: ${endpoint} - Success`, 'success');
             } catch (e) {
                 showResult('players-result', e, true);
-                log(`Players API: ${endpoint} - Error: ${e.detail || e.message}`, 'error');
-            }
-        }
-
-        // Admin Actions
-        async function refreshStandings() {
-            log('Refreshing standings...');
-            showToast('Refreshing standings... (this may take a moment)');
-            try {
-                const data = await apiCall('/admin/refresh/standings', 'POST');
-                log(`Standings updated: ${data.standings_updated}`, 'success');
-                showToast('Standings refreshed');
-            } catch (e) {
-                log(`Error: ${e.detail || e.message}`, 'error');
-                showToast(e.detail || 'Failed', 'error');
-            }
-        }
-
-        async function clearCache() {
-            log('Clearing cache...');
-            try {
-                const data = await apiCall('/admin/cache/clear?pattern=*', 'POST');
-                log(`Cache cleared: ${data.keys_deleted} keys deleted`, 'success');
-                showToast('Cache cleared');
-            } catch (e) {
-                log(`Error: ${e.detail || e.message}`, 'error');
-                showToast(e.detail || 'Failed', 'error');
-            }
-        }
-
-        async function resetMetrics() {
-            log('Resetting metrics...');
-            try {
-                await apiCall('/admin/metrics/reset', 'POST');
-                log('Metrics reset', 'success');
-                showToast('Metrics reset');
-                updateMetrics();
-            } catch (e) {
-                log(`Error: ${e.detail || e.message}`, 'error');
-                showToast(e.detail || 'Failed', 'error');
-            }
-        }
-
-        async function refreshTeamGames() {
-            const teamId = document.getElementById('refresh-team-select').value;
-            if (!teamId) {
-                showToast('Please select a team', 'error');
-                return;
-            }
-            log(`Refreshing games for team ${teamId}...`);
-            showToast('Refreshing games... (this may take a moment)');
-            try {
-                const data = await apiCall(`/admin/refresh/team/${teamId}/games`, 'POST');
-                log(`Games refreshed for ${data.team}: ${data.games_added} added`, 'success');
-                showToast(`${data.games_added} games added for ${data.team}`);
-            } catch (e) {
-                log(`Error: ${e.detail || e.message}`, 'error');
-                showToast(e.detail || 'Failed', 'error');
             }
         }
 
@@ -1069,6 +1334,7 @@
         }
 
         // Initial load
+        loadAllWidgets();
         loadDbStats();
         setInterval(updateMetrics, 10000);
     </script>
