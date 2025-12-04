@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.services import TeamService, GameService, StandingsService
+from app.nba_client import NBAClient
 from app.config import get_settings
 
 router = APIRouter()
@@ -151,4 +152,39 @@ async def get_conference_standings(
         force_refresh=refresh,
     )
     return {"conference": conference.capitalize(), "standings": standings}
+
+
+@router.get("/{team_id}/roster")
+async def get_team_roster(
+    team_id: int,
+    season: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get team roster for the current season.
+    
+    Returns list of players with name, number, position, height, weight, age.
+    
+    - **team_id**: Internal team ID
+    - **season**: Season string (e.g., "2025-26"), defaults to current
+    
+    Example: /api/teams/2/roster
+    """
+    # Get team to get NBA team ID
+    team = await TeamService.get_team_by_id(db, team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    roster = NBAClient.get_team_roster(
+        team["nba_team_id"],
+        season=season or settings.current_season
+    )
+    
+    return {
+        "team_id": team_id,
+        "team_name": team["name"],
+        "season": season or settings.current_season,
+        "roster": roster,
+        "count": len(roster)
+    }
 

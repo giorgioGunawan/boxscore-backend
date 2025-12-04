@@ -18,6 +18,7 @@ from nba_api.stats.endpoints import (
     scoreboardv2,
     commonplayerinfo,
     scheduleleaguev2,
+    commonteamroster,
 )
 
 from app.cache import increment_upstream_calls
@@ -189,6 +190,42 @@ class NBAClient:
             })
         
         return games
+    
+    @staticmethod
+    @rate_limited
+    def get_team_roster(
+        team_id: int,
+        season: str = "2024-25"
+    ) -> list[dict]:
+        """
+        Get team roster for a season.
+        Returns list of players with their info.
+        """
+        try:
+            roster = commonteamroster.CommonTeamRoster(
+                team_id=team_id,
+                season=season
+            )
+            df = roster.get_data_frames()[0]
+            
+            players = []
+            for _, row in df.iterrows():
+                players.append({
+                    "nba_player_id": row["PLAYER_ID"],
+                    "name": row["PLAYER"],
+                    "number": row["NUM"],
+                    "position": row["POSITION"],
+                    "height": row["HEIGHT"],
+                    "weight": row["WEIGHT"],
+                    "age": row["AGE"],
+                    "experience": row["EXP"],
+                    "school": row["SCHOOL"],
+                })
+            
+            return players
+        except Exception as e:
+            print(f"Error getting roster for team {team_id}: {e}")
+            return []
     
     @staticmethod
     @rate_limited

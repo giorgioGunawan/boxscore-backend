@@ -558,6 +558,7 @@
                         <option value="last-games">Last Games</option>
                         <option value="standings">Team Standings</option>
                         <option value="conference">Conference Standings</option>
+                        <option value="roster">Team Roster</option>
                     </select>
                     <select id="teams-team-select" style="display:none;">
                         <option value="">Select team...</option>
@@ -753,6 +754,7 @@
                 case 'last-games': path = `/api/teams/${teamId}/last-games?count=${count}`; break;
                 case 'standings': path = `/api/teams/${teamId}/standings`; break;
                 case 'conference': path = `/api/teams/standings/${conference}`; break;
+                case 'roster': path = `/api/teams/${teamId}/roster`; break;
             }
             document.getElementById('teams-api-path').textContent = path;
         }
@@ -795,6 +797,7 @@
                 case 'next-games':
                 case 'last-games':
                 case 'standings':
+                case 'roster':
                     teamSelect.style.display = 'block';
                     if (this.value === 'next-games' || this.value === 'last-games') {
                         countInput.style.display = 'block';
@@ -933,6 +936,10 @@
                         break;
                     case 'conference':
                         url = `/teams/standings/${conference}`;
+                        break;
+                    case 'roster':
+                        if (!teamId) throw { detail: 'Please select a team' };
+                        url = `/teams/${teamId}/roster`;
                         break;
                 }
                 
