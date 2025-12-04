@@ -640,10 +640,6 @@
             <div class="section">
                 <h2 class="section-title">Quick Actions</h2>
                 <div class="actions-grid">
-                    <button class="action-btn" onclick="refreshTeams()">
-                        <span class="icon">🏟️</span>
-                        <span>Seed Teams</span>
-                    </button>
                     <button class="action-btn" onclick="refreshStandings()">
                         <span class="icon">📊</span>
                         <span>Refresh Standings</span>
@@ -988,19 +984,6 @@
         }
 
         // Admin Actions
-        async function refreshTeams() {
-            log('Seeding teams...');
-            try {
-                const data = await apiCall('/admin/refresh/teams', 'POST');
-                log(`Teams seeded: ${data.teams_added} added`, 'success');
-                showToast(`${data.teams_added} teams added`);
-                setTimeout(() => location.reload(), 1000);
-            } catch (e) {
-                log(`Error: ${e.detail || e.message}`, 'error');
-                showToast(e.detail || 'Failed', 'error');
-            }
-        }
-
         async function refreshStandings() {
             log('Refreshing standings...');
             showToast('Refreshing standings... (this may take a moment)');
