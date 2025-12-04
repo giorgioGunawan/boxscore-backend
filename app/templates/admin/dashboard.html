@@ -335,6 +335,35 @@
             border-radius: 16px;
             padding: 1.25rem;
             border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .widget-content {
+            flex: 1;
+        }
+
+        .widget-apis {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .widget-apis .api-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            color: var(--accent-orange);
+        }
+
+        .widget-apis code {
+            display: block;
+            color: var(--text-secondary);
+            padding: 0.15rem 0;
         }
 
         .widget-title {
@@ -694,6 +723,11 @@
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
                     </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/teams/{id}/next-games?count=3</code>
+                        <code>/api/teams/{id}/standings</code>
+                    </div>
                 </div>
 
                 <!-- Widget 2: Season Average -->
@@ -701,6 +735,10 @@
                     <div class="widget-title"><span class="badge">2</span> Season Average</div>
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
+                    </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/players/{nba_id}/season-averages</code>
                     </div>
                 </div>
 
@@ -710,6 +748,10 @@
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
                     </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/teams/{id}/last-games?count=3</code>
+                    </div>
                 </div>
 
                 <!-- Widget 4: Team Standing -->
@@ -717,6 +759,10 @@
                     <div class="widget-title"><span class="badge">4</span> Team Standing</div>
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
+                    </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/teams/{id}/standings</code>
                     </div>
                 </div>
 
@@ -726,6 +772,10 @@
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
                     </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/players/{nba_id}/latest-game</code>
+                    </div>
                 </div>
 
                 <!-- Widget 6: Countdown -->
@@ -733,6 +783,10 @@
                     <div class="widget-title"><span class="badge">6</span> Countdown to Next Game</div>
                     <div class="widget-content">
                         <div class="loading-spinner"></div> Loading...
+                    </div>
+                    <div class="widget-apis">
+                        <div class="api-label">APIs Used:</div>
+                        <code>/api/teams/{id}/next-games?count=1</code>
                     </div>
                 </div>
             </div>
