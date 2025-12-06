@@ -740,18 +740,33 @@
         .cms-table .actions {
             display: flex;
             gap: 0.5rem;
+            justify-content: flex-end;
+            white-space: nowrap;
+        }
+
+        .cms-table th:last-child,
+        .cms-table td:last-child {
+            position: sticky;
+            right: 0;
+            background: var(--bg-card);
+            z-index: 10;
+        }
+
+        .cms-table tr:hover td:last-child {
+            background: var(--bg-hover);
         }
 
         .cms-table .btn-edit,
         .cms-table .btn-delete {
-            padding: 0.25rem 0.5rem;
+            padding: 0.35rem 0.65rem;
             border: 1px solid var(--border);
-            border-radius: 4px;
-            background: transparent;
-            color: var(--text-muted);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             transition: all 0.2s;
+            min-width: 40px;
         }
 
         .cms-table .btn-edit:hover {
@@ -1004,6 +1019,7 @@
             <div class="cms-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
                 <button class="cms-tab active" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
                 <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
+                <button class="cms-tab" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Game Stats</button>
                 <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">🏀 Games</button>
                 <button class="cms-tab" data-cms="standings" onclick="switchCmsTab('standings')">📈 Standings</button>
             </div>
@@ -1012,9 +1028,23 @@
             <div class="cms-content active" id="cms-players">
                 <div class="api-tester">
                     <h3>👤 Players</h3>
-                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="players-search-input" placeholder="Search by name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsPlayers()">
+                        <select id="players-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
+                        </select>
                         <button class="action-btn small" onclick="loadCmsPlayers()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddPlayerForm()">➕ Add Player</button>
+                    </div>
+                    <div id="players-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="players-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="players-prev" onclick="loadCmsPlayersPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="players-next" onclick="loadCmsPlayersPage(1)" disabled>Next →</button>
+                        </div>
                     </div>
                     
                     <!-- Add Player Form (hidden by default) -->
@@ -1062,11 +1092,22 @@
                 <div class="api-tester">
                     <h3>📊 Player Season Stats</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
-                        <select id="stats-filter-player" style="width: 150px;">
-                            <option value="">All Players</option>
+                        <input type="text" id="stats-search-input" placeholder="Search by name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsStats()">
+                        <select id="stats-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
                         </select>
                         <button class="action-btn small" onclick="loadCmsStats()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddStatsForm()">➕ Add Stats</button>
+                    </div>
+                    <div id="stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="stats-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="stats-prev" onclick="loadCmsStatsPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="stats-next" onclick="loadCmsStatsPage(1)" disabled>Next →</button>
+                        </div>
                     </div>
                     
                     <!-- Add Stats Form -->
@@ -1108,6 +1149,71 @@
                 </div>
             </div>
 
+            <!-- Player Game Stats CMS -->
+            <div class="cms-content" id="cms-game-stats">
+                <div class="api-tester">
+                    <h3>🎯 Player Game Stats (Last Results)</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="game-stats-search-input" placeholder="Search by player name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsGameStats()">
+                        <select id="game-stats-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="action-btn small" onclick="loadCmsGameStats()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddGameStatsForm()">➕ Add Game Stats</button>
+                    </div>
+                    <div id="game-stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="game-stats-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="game-stats-prev" onclick="loadCmsGameStatsPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="game-stats-next" onclick="loadCmsGameStatsPage(1)" disabled>Next →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Game Stats Form -->
+                    <div id="add-game-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game Stats</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <input type="number" id="new-game-stats-player-id" placeholder="Player ID" style="width: 100px;">
+                            <input type="number" id="new-game-stats-game-id" placeholder="Game ID" style="width: 100px;">
+                            <input type="number" id="new-game-stats-pts" placeholder="PTS" style="width: 70px;">
+                            <input type="number" id="new-game-stats-reb" placeholder="REB" style="width: 70px;">
+                            <input type="number" id="new-game-stats-ast" placeholder="AST" style="width: 70px;">
+                            <input type="number" id="new-game-stats-stl" placeholder="STL" style="width: 70px;">
+                            <input type="number" id="new-game-stats-blk" placeholder="BLK" style="width: 70px;">
+                            <input type="text" id="new-game-stats-minutes" placeholder="MIN (e.g., 34:22)" style="width: 100px;">
+                            <button class="action-btn small" onclick="addGameStats()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddGameStatsForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="cms-table-container">
+                        <table class="cms-table" id="game-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Player</th>
+                                    <th>Game</th>
+                                    <th>Date</th>
+                                    <th>PTS</th>
+                                    <th>REB</th>
+                                    <th>AST</th>
+                                    <th>STL</th>
+                                    <th>BLK</th>
+                                    <th>MIN</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="game-stats-tbody">
+                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Games CMS -->
             <div class="cms-content" id="cms-games">
                 <div class="api-tester">
@@ -1126,6 +1232,13 @@
                         </select>
                         <button class="action-btn small" onclick="loadCmsGames()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddGameForm()">➕ Add Game</button>
+                    </div>
+                    <div id="games-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="games-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next →</button>
+                        </div>
                     </div>
                     
                     <!-- Add Game Form -->
@@ -1768,6 +1881,14 @@
         // CMS FUNCTIONS
         // =====================
 
+        // Pagination state
+        const cmsPagination = {
+            players: { offset: 0, limit: 100, total: 0 },
+            stats: { offset: 0, limit: 100, total: 0 },
+            games: { offset: 0, limit: 100, total: 0 },
+            gameStats: { offset: 0, limit: 100, total: 0 },
+        };
+
         function switchCmsTab(tabName) {
             document.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.cms-content').forEach(c => c.classList.remove('active'));
@@ -1778,6 +1899,7 @@
             if (tabName === 'players') loadCmsPlayers();
             if (tabName === 'stats') loadCmsStats();
             if (tabName === 'games') loadCmsGames();
+            if (tabName === 'game-stats') loadCmsGameStats();
             if (tabName === 'standings') loadCmsStandings();
         }
 
@@ -1794,10 +1916,21 @@
             const tbody = document.getElementById('players-tbody');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
             
+            const search = document.getElementById('players-search-input').value.trim();
+            const teamId = document.getElementById('players-filter-team').value;
+            const pag = cmsPagination.players;
+            
+            let url = `/admin/data/players?limit=${pag.limit}&offset=${pag.offset}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (teamId) url += `&team_id=${teamId}`;
+            
             try {
-                const data = await apiCall('/admin/data/players');
+                const data = await apiCall(url);
+                pag.total = data.total || 0;
+                
                 if (data.players.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No players found</td></tr>';
+                    updatePaginationUI('players', pag);
                     return;
                 }
                 
@@ -1815,9 +1948,32 @@
                         </td>
                     </tr>
                 `).join('');
+                
+                updatePaginationUI('players', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="7" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
             }
+        }
+
+        function loadCmsPlayersPage(direction) {
+            const pag = cmsPagination.players;
+            pag.offset = Math.max(0, pag.offset + (direction * pag.limit));
+            loadCmsPlayers();
+        }
+
+        function updatePaginationUI(type, pag) {
+            const infoEl = document.getElementById(`${type}-pagination-info`);
+            const prevBtn = document.getElementById(`${type}-prev`);
+            const nextBtn = document.getElementById(`${type}-next`);
+            
+            if (infoEl) {
+                const start = pag.offset + 1;
+                const end = Math.min(pag.offset + pag.limit, pag.total);
+                infoEl.textContent = `Showing ${start}-${end} of ${pag.total}`;
+            }
+            
+            if (prevBtn) prevBtn.disabled = pag.offset === 0;
+            if (nextBtn) nextBtn.disabled = pag.offset + pag.limit >= pag.total;
         }
 
         async function addPlayer() {
@@ -1887,14 +2043,21 @@
             const tbody = document.getElementById('stats-tbody');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
             
-            const playerId = document.getElementById('stats-filter-player').value;
-            let url = '/admin/data/player-stats';
-            if (playerId) url += `?player_id=${playerId}`;
+            const search = document.getElementById('stats-search-input').value.trim();
+            const teamId = document.getElementById('stats-filter-team').value;
+            const pag = cmsPagination.stats;
+            
+            let url = `/admin/data/player-stats?limit=${pag.limit}&offset=${pag.offset}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (teamId) url += `&team_id=${teamId}`;
             
             try {
                 const data = await apiCall(url);
+                pag.total = data.total || 0;
+                
                 if (data.stats.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No stats found</td></tr>';
+                    updatePaginationUI('stats', pag);
                     return;
                 }
                 
@@ -1913,9 +2076,17 @@
                         </td>
                     </tr>
                 `).join('');
+                
+                updatePaginationUI('stats', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
             }
+        }
+
+        function loadCmsStatsPage(direction) {
+            const pag = cmsPagination.stats;
+            pag.offset = Math.max(0, pag.offset + (direction * pag.limit));
+            loadCmsStats();
         }
 
         async function addStats() {
@@ -1987,14 +2158,19 @@
             
             const teamId = document.getElementById('games-filter-team').value;
             const status = document.getElementById('games-filter-status').value;
-            let url = '/admin/data/games?limit=50';
+            const pag = cmsPagination.games;
+            
+            let url = `/admin/data/games?limit=${pag.limit}&offset=${pag.offset}`;
             if (teamId) url += `&team_id=${teamId}`;
             if (status) url += `&status=${status}`;
             
             try {
                 const data = await apiCall(url);
+                pag.total = data.total || 0;
+                
                 if (data.games.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No games found</td></tr>';
+                    updatePaginationUI('games', pag);
                     return;
                 }
                 
@@ -2021,9 +2197,17 @@
                         </td>
                     </tr>
                 `).join('');
+                
+                updatePaginationUI('games', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="6" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
             }
+        }
+
+        function loadCmsGamesPage(direction) {
+            const pag = cmsPagination.games;
+            pag.offset = Math.max(0, pag.offset + (direction * pag.limit));
+            loadCmsGames();
         }
 
         async function addGame() {
@@ -2093,6 +2277,130 @@
             }
         }
 
+        // PLAYER GAME STATS
+        function showAddGameStatsForm() { document.getElementById('add-game-stats-form').style.display = 'block'; }
+        function hideAddGameStatsForm() { document.getElementById('add-game-stats-form').style.display = 'none'; }
+
+        async function loadCmsGameStats() {
+            const tbody = document.getElementById('game-stats-tbody');
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            const search = document.getElementById('game-stats-search-input').value.trim();
+            const teamId = document.getElementById('game-stats-filter-team').value;
+            const pag = cmsPagination.gameStats;
+            
+            let url = `/admin/data/player-game-stats?limit=${pag.limit}&offset=${pag.offset}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (teamId) url += `&team_id=${teamId}`;
+            
+            try {
+                const data = await apiCall(url);
+                pag.total = data.total || 0;
+                
+                if (data.stats.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">No game stats found</td></tr>';
+                    updatePaginationUI('game-stats', pag);
+                    return;
+                }
+                
+                tbody.innerHTML = data.stats.map(s => `
+                    <tr data-id="${s.id}">
+                        <td>${s.id}</td>
+                        <td>${s.player_name || s.player_id}</td>
+                        <td>${s.away_team} @ ${s.home_team}</td>
+                        <td>${s.game_date || '-'}</td>
+                        <td><input type="number" value="${s.pts}" data-field="pts" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.reb}" data-field="reb" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.ast}" data-field="ast" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.stl}" data-field="stl" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.blk}" data-field="blk" style="width: 50px;"></td>
+                        <td><input type="text" value="${s.minutes || ''}" data-field="minutes" style="width: 70px;"></td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="saveGameStats(${s.id})">💾</button>
+                            <button class="btn-delete" onclick="deleteGameStats(${s.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                updatePaginationUI('game-stats', pag);
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="11" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        function loadCmsGameStatsPage(direction) {
+            const pag = cmsPagination.gameStats;
+            pag.offset = Math.max(0, pag.offset + (direction * pag.limit));
+            loadCmsGameStats();
+        }
+
+        async function addGameStats() {
+            const playerId = document.getElementById('new-game-stats-player-id').value;
+            const gameId = document.getElementById('new-game-stats-game-id').value;
+            
+            if (!playerId || !gameId) {
+                showToast('Player ID and Game ID required', 'error');
+                return;
+            }
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/player-game-stats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player_id: parseInt(playerId),
+                        game_id: parseInt(gameId),
+                        pts: parseInt(document.getElementById('new-game-stats-pts').value) || 0,
+                        reb: parseInt(document.getElementById('new-game-stats-reb').value) || 0,
+                        ast: parseInt(document.getElementById('new-game-stats-ast').value) || 0,
+                        stl: parseInt(document.getElementById('new-game-stats-stl').value) || 0,
+                        blk: parseInt(document.getElementById('new-game-stats-blk').value) || 0,
+                        minutes: document.getElementById('new-game-stats-minutes').value || null
+                    })
+                });
+                showToast('Game stats added!');
+                hideAddGameStatsForm();
+                loadCmsGameStats();
+            } catch (e) {
+                showToast('Error adding game stats', 'error');
+            }
+        }
+
+        async function saveGameStats(id) {
+            const row = document.querySelector(`#game-stats-table tr[data-id="${id}"]`);
+            const data = {};
+            row.querySelectorAll('input[data-field]').forEach(input => {
+                const value = input.value.trim();
+                if (input.type === 'number') {
+                    data[input.dataset.field] = value ? parseInt(value) : 0;
+                } else {
+                    data[input.dataset.field] = value || null;
+                }
+            });
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/player-game-stats/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Game stats saved!');
+            } catch (e) {
+                showToast('Error saving', 'error');
+            }
+        }
+
+        async function deleteGameStats(id) {
+            if (!confirm('Delete these game stats?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/data/player-game-stats/${id}`, { method: 'DELETE' });
+                showToast('Game stats deleted');
+                loadCmsGameStats();
+            } catch (e) {
+                showToast('Error deleting', 'error');
+            }
+        }
+
         // STANDINGS
         async function loadCmsStandings() {
             const tbody = document.getElementById('standings-tbody');
@@ -2144,6 +2452,32 @@
                 showToast('Error saving', 'error');
             }
         }
+
+        // Reset pagination when filters change
+        document.getElementById('players-search-input')?.addEventListener('input', () => {
+            cmsPagination.players.offset = 0;
+        });
+        document.getElementById('players-filter-team')?.addEventListener('change', () => {
+            cmsPagination.players.offset = 0;
+        });
+        document.getElementById('stats-search-input')?.addEventListener('input', () => {
+            cmsPagination.stats.offset = 0;
+        });
+        document.getElementById('stats-filter-team')?.addEventListener('change', () => {
+            cmsPagination.stats.offset = 0;
+        });
+        document.getElementById('games-filter-team')?.addEventListener('change', () => {
+            cmsPagination.games.offset = 0;
+        });
+        document.getElementById('games-filter-status')?.addEventListener('change', () => {
+            cmsPagination.games.offset = 0;
+        });
+        document.getElementById('game-stats-search-input')?.addEventListener('input', () => {
+            cmsPagination.gameStats.offset = 0;
+        });
+        document.getElementById('game-stats-filter-team')?.addEventListener('change', () => {
+            cmsPagination.gameStats.offset = 0;
+        });
 
         // Initial load
         loadAllWidgets();

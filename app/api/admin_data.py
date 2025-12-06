@@ -8,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Player, PlayerSeasonStats, Game, TeamStandings, Team
+from app.models import Player, PlayerSeasonStats, Game, TeamStandings, Team, PlayerGameStats
 from app.config import get_settings
+from sqlalchemy import func, or_
 
 router = APIRouter(prefix="/admin/data", tags=["admin-data"])
 settings = get_settings()
@@ -90,17 +91,36 @@ class StandingsUpdate(BaseModel):
 
 @router.get("/players")
 async def list_players(
-    limit: int = Query(default=50, le=200),
+    limit: int = Query(default=100, le=500),
     offset: int = Query(default=0),
+    search: Optional[str] = Query(default=None),
+    team_id: Optional[int] = Query(default=None),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all players in the database."""
-    result = await db.execute(
-        select(Player)
-        .options(selectinload(Player.team))
-        .offset(offset)
-        .limit(limit)
-    )
+    """List all players in the database with search and pagination."""
+    query = select(Player).options(selectinload(Player.team))
+    
+    # Search by name
+    if search:
+        query = query.where(Player.full_name.ilike(f"%{search}%"))
+    
+    # Filter by team
+    if team_id:
+        query = query.where(Player.team_id == team_id)
+    
+    # Get total count
+    count_query = select(func.count(Player.id))
+    if search:
+        count_query = count_query.where(Player.full_name.ilike(f"%{search}%"))
+    if team_id:
+        count_query = count_query.where(Player.team_id == team_id)
+    
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+    
+    # Get paginated results
+    query = query.order_by(Player.full_name).offset(offset).limit(limit)
+    result = await db.execute(query)
     players = result.scalars().all()
     
     return {
@@ -117,6 +137,9 @@ async def list_players(
             for p in players
         ],
         "count": len(players),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
     }
 
 
@@ -201,16 +224,40 @@ async def delete_player(
 async def list_player_stats(
     player_id: Optional[int] = None,
     season: Optional[str] = None,
+    search: Optional[str] = Query(default=None),
+    team_id: Optional[int] = Query(default=None),
+    limit: int = Query(default=100, le=500),
+    offset: int = Query(default=0),
     db: AsyncSession = Depends(get_db)
 ):
-    """List player season stats."""
+    """List player season stats with search and pagination."""
     query = select(PlayerSeasonStats).options(selectinload(PlayerSeasonStats.player))
     
     if player_id:
         query = query.where(PlayerSeasonStats.player_id == player_id)
     if season:
         query = query.where(PlayerSeasonStats.season == season)
+    if search:
+        query = query.join(Player).where(Player.full_name.ilike(f"%{search}%"))
+    if team_id:
+        query = query.join(Player).where(Player.team_id == team_id)
     
+    # Get total count
+    count_query = select(func.count(PlayerSeasonStats.id))
+    if player_id:
+        count_query = count_query.where(PlayerSeasonStats.player_id == player_id)
+    if season:
+        count_query = count_query.where(PlayerSeasonStats.season == season)
+    if search:
+        count_query = count_query.join(Player).where(Player.full_name.ilike(f"%{search}%"))
+    if team_id:
+        count_query = count_query.join(Player).where(Player.team_id == team_id)
+    
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+    
+    # Get paginated results
+    query = query.order_by(PlayerSeasonStats.season.desc(), PlayerSeasonStats.player_id).offset(offset).limit(limit)
     result = await db.execute(query)
     stats = result.scalars().all()
     
@@ -234,6 +281,9 @@ async def list_player_stats(
             for s in stats
         ],
         "count": len(stats),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
     }
 
 
@@ -341,15 +391,14 @@ async def list_games(
     team_id: Optional[int] = None,
     season: Optional[str] = None,
     status: Optional[str] = None,
-    limit: int = Query(default=50, le=200),
+    limit: int = Query(default=100, le=500),
+    offset: int = Query(default=0),
     db: AsyncSession = Depends(get_db)
 ):
-    """List games."""
+    """List games with pagination."""
     query = (
         select(Game)
         .options(selectinload(Game.home_team), selectinload(Game.away_team))
-        .order_by(Game.start_time_utc.desc())
-        .limit(limit)
     )
     
     if team_id:
@@ -359,6 +408,20 @@ async def list_games(
     if status:
         query = query.where(Game.status == status)
     
+    # Get total count
+    count_query = select(func.count(Game.id))
+    if team_id:
+        count_query = count_query.where((Game.home_team_id == team_id) | (Game.away_team_id == team_id))
+    if season:
+        count_query = count_query.where(Game.season == season)
+    if status:
+        count_query = count_query.where(Game.status == status)
+    
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+    
+    # Get paginated results
+    query = query.order_by(Game.start_time_utc.desc()).offset(offset).limit(limit)
     result = await db.execute(query)
     games = result.scalars().all()
     
@@ -381,6 +444,9 @@ async def list_games(
             for g in games
         ],
         "count": len(games),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
     }
 
 
@@ -542,6 +608,202 @@ async def update_standings(
     await db.commit()
     
     return {"team_id": team_id, "message": "Standings updated"}
+
+
+# ============ Player Game Stats ============
+
+class PlayerGameStatsCreate(BaseModel):
+    player_id: int
+    game_id: int
+    pts: int = 0
+    reb: int = 0
+    ast: int = 0
+    stl: int = 0
+    blk: int = 0
+    minutes: Optional[str] = None
+
+
+class PlayerGameStatsUpdate(BaseModel):
+    pts: Optional[int] = None
+    reb: Optional[int] = None
+    ast: Optional[int] = None
+    stl: Optional[int] = None
+    blk: Optional[int] = None
+    minutes: Optional[str] = None
+
+
+@router.get("/player-game-stats")
+async def list_player_game_stats(
+    player_id: Optional[int] = None,
+    game_id: Optional[int] = None,
+    search: Optional[str] = Query(default=None),
+    team_id: Optional[int] = Query(default=None),
+    limit: int = Query(default=100, le=500),
+    offset: int = Query(default=0),
+    db: AsyncSession = Depends(get_db)
+):
+    """List player game stats with search and pagination."""
+    try:
+        # Build base query with proper relationship loading
+        from sqlalchemy.orm import joinedload
+        query = (
+            select(PlayerGameStats)
+            .options(
+                selectinload(PlayerGameStats.player),
+                joinedload(PlayerGameStats.game).joinedload(Game.home_team),
+                joinedload(PlayerGameStats.game).joinedload(Game.away_team)
+            )
+        )
+        
+        # Apply filters
+        if player_id:
+            query = query.where(PlayerGameStats.player_id == player_id)
+        if game_id:
+            query = query.where(PlayerGameStats.game_id == game_id)
+        if search:
+            # Use a subquery to filter by player name
+            player_subq = select(Player.id).where(Player.full_name.ilike(f"%{search}%"))
+            query = query.where(PlayerGameStats.player_id.in_(player_subq))
+        if team_id:
+            # Filter by player's team
+            player_subq = select(Player.id).where(Player.team_id == team_id)
+            query = query.where(PlayerGameStats.player_id.in_(player_subq))
+        
+        # Get total count (simpler query without joins for count)
+        count_query = select(func.count(PlayerGameStats.id))
+        if player_id:
+            count_query = count_query.where(PlayerGameStats.player_id == player_id)
+        if game_id:
+            count_query = count_query.where(PlayerGameStats.game_id == game_id)
+        if search:
+            player_subq = select(Player.id).where(Player.full_name.ilike(f"%{search}%"))
+            count_query = count_query.where(PlayerGameStats.player_id.in_(player_subq))
+        if team_id:
+            player_subq = select(Player.id).where(Player.team_id == team_id)
+            count_query = count_query.where(PlayerGameStats.player_id.in_(player_subq))
+        
+        total_result = await db.execute(count_query)
+        total = total_result.scalar_one()
+        
+        # Get paginated results
+        query = query.order_by(PlayerGameStats.id.desc()).offset(offset).limit(limit)
+        result = await db.execute(query)
+        stats = result.unique().scalars().all()
+        
+        return {
+            "stats": [
+                {
+                    "id": s.id,
+                    "player_id": s.player_id,
+                    "player_name": s.player.full_name if s.player else None,
+                    "game_id": s.game_id,
+                    "game_date": s.game.start_time_utc.strftime("%Y-%m-%d") if s.game and s.game.start_time_utc else None,
+                    "home_team": s.game.home_team.abbreviation if s.game and s.game.home_team else None,
+                    "away_team": s.game.away_team.abbreviation if s.game and s.game.away_team else None,
+                    "pts": s.pts,
+                    "reb": s.reb,
+                    "ast": s.ast,
+                    "stl": s.stl,
+                    "blk": s.blk,
+                    "minutes": s.minutes,
+                }
+                for s in stats
+            ],
+            "count": len(stats),
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+        }
+    except Exception as e:
+        print(f"Error in list_player_game_stats: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching game stats: {str(e)}")
+
+
+@router.post("/player-game-stats")
+async def create_player_game_stats(
+    data: PlayerGameStatsCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create player game stats."""
+    # Check if stats already exist
+    result = await db.execute(
+        select(PlayerGameStats).where(
+            PlayerGameStats.player_id == data.player_id,
+            PlayerGameStats.game_id == data.game_id,
+        )
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Stats for this player/game already exist")
+    
+    stats = PlayerGameStats(
+        player_id=data.player_id,
+        game_id=data.game_id,
+        pts=data.pts,
+        reb=data.reb,
+        ast=data.ast,
+        stl=data.stl,
+        blk=data.blk,
+        minutes=data.minutes,
+        source="manual",
+        created_at=datetime.utcnow(),
+    )
+    db.add(stats)
+    await db.commit()
+    await db.refresh(stats)
+    
+    return {"id": stats.id, "message": "Game stats created"}
+
+
+@router.put("/player-game-stats/{stats_id}")
+async def update_player_game_stats(
+    stats_id: int,
+    data: PlayerGameStatsUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Update player game stats."""
+    result = await db.execute(select(PlayerGameStats).where(PlayerGameStats.id == stats_id))
+    stats = result.scalar_one_or_none()
+    
+    if not stats:
+        raise HTTPException(status_code=404, detail="Game stats not found")
+    
+    if data.pts is not None:
+        stats.pts = data.pts
+    if data.reb is not None:
+        stats.reb = data.reb
+    if data.ast is not None:
+        stats.ast = data.ast
+    if data.stl is not None:
+        stats.stl = data.stl
+    if data.blk is not None:
+        stats.blk = data.blk
+    if data.minutes is not None:
+        stats.minutes = data.minutes
+    
+    stats.updated_at = datetime.utcnow()
+    await db.commit()
+    
+    return {"id": stats.id, "message": "Game stats updated"}
+
+
+@router.delete("/player-game-stats/{stats_id}")
+async def delete_player_game_stats(
+    stats_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete player game stats."""
+    result = await db.execute(select(PlayerGameStats).where(PlayerGameStats.id == stats_id))
+    stats = result.scalar_one_or_none()
+    
+    if not stats:
+        raise HTTPException(status_code=404, detail="Game stats not found")
+    
+    await db.delete(stats)
+    await db.commit()
+    
+    return {"message": "Game stats deleted"}
 
 
 # ============ Teams (read-only, for reference) ============
