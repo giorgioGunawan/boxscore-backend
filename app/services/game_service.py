@@ -64,21 +64,25 @@ class GameService:
         
         # If not enough games in DB or forcing refresh, fetch from schedule API
         if len(games) < count or force_refresh:
-            await GameService.refresh_team_schedule(db, team, season)
-            
-            # Re-query
-            result = await db.execute(
-                select(Game)
-                .options(selectinload(Game.home_team), selectinload(Game.away_team))
-                .where(
-                    or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
-                    Game.season == season,
-                    Game.status == "scheduled",
+            try:
+                await GameService.refresh_team_schedule(db, team, season)
+                
+                # Re-query
+                result = await db.execute(
+                    select(Game)
+                    .options(selectinload(Game.home_team), selectinload(Game.away_team))
+                    .where(
+                        or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
+                        Game.season == season,
+                        Game.status == "scheduled",
+                    )
+                    .order_by(Game.start_time_utc.asc())
+                    .limit(count)
                 )
-                .order_by(Game.start_time_utc.asc())
-                .limit(count)
-            )
-            games = result.scalars().all()
+                games = result.scalars().all()
+            except Exception as e:
+                print(f"Error refreshing schedule for team {team_id}: {e}")
+                # Continue with whatever games we have in DB
         
         response = []
         for game in games:
@@ -147,21 +151,25 @@ class GameService:
         
         # If not enough games in DB or forcing refresh, fetch from NBA API
         if len(games) < count or force_refresh:
-            await GameService.refresh_team_games(db, team, season, season_type)
-            
-            # Re-query
-            result = await db.execute(
-                select(Game)
-                .options(selectinload(Game.home_team), selectinload(Game.away_team))
-                .where(
-                    or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
-                    Game.season == season,
-                    Game.status == "final",
+            try:
+                await GameService.refresh_team_games(db, team, season, season_type)
+                
+                # Re-query
+                result = await db.execute(
+                    select(Game)
+                    .options(selectinload(Game.home_team), selectinload(Game.away_team))
+                    .where(
+                        or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
+                        Game.season == season,
+                        Game.status == "final",
+                    )
+                    .order_by(Game.start_time_utc.desc())
+                    .limit(count)
                 )
-                .order_by(Game.start_time_utc.desc())
-                .limit(count)
-            )
-            games = result.scalars().all()
+                games = result.scalars().all()
+            except Exception as e:
+                print(f"Error refreshing games for team {team_id}: {e}")
+                # Continue with whatever games we have in DB
         
         response = []
         for game in games:

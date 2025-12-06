@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.database import Base
 
 
@@ -28,6 +29,15 @@ class PlayerGameStats(Base):
     plus_minus = Column(Integer, nullable=True)
     turnovers = Column(Integer, nullable=True)
     
+    # Source tracking & override
+    source = Column(String(20), default="api")  # 'api' or 'manual'
+    is_manual_override = Column(Boolean, default=False)
+    override_reason = Column(Text, nullable=True)
+    last_api_sync = Column(DateTime, nullable=True)
+    last_manual_edit = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
     # Relationships
     player = relationship("Player", back_populates="game_stats")
     game = relationship("Game", back_populates="player_stats")
@@ -38,4 +48,3 @@ class PlayerGameStats(Base):
     
     def __repr__(self):
         return f"<PlayerGameStats {self.player_id} - Game {self.game_id}>"
-

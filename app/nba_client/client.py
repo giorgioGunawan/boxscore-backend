@@ -25,12 +25,27 @@ from app.cache import increment_upstream_calls
 
 
 def rate_limited(func):
-    """Rate limit decorator to avoid hammering NBA API."""
+    """Rate limit decorator with retry logic to handle NBA API flakiness."""
     @wraps(func)
     def wrapper(*args, **kwargs):
-        time.sleep(0.6)  # NBA API recommends ~600ms between requests
-        increment_upstream_calls()
-        return func(*args, **kwargs)
+        max_retries = 3
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                time.sleep(0.6 + (attempt * 0.5))  # Increase delay on retries
+                increment_upstream_calls()
+                return func(*args, **kwargs)
+            except Exception as e:
+                last_error = e
+                print(f"NBA API attempt {attempt + 1}/{max_retries} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(1.0)  # Extra delay before retry
+                continue
+        
+        # All retries failed
+        print(f"NBA API call failed after {max_retries} attempts: {last_error}")
+        raise last_error
     return wrapper
 
 

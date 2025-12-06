@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.database import Base
 
 
@@ -22,6 +23,15 @@ class TeamStandings(Base):
     streak = Column(String(10), nullable=True)  # e.g., "W3", "L2"
     last_10 = Column(String(10), nullable=True)  # e.g., "7-3"
     
+    # Source tracking & override
+    source = Column(String(20), default="api")  # 'api' or 'manual'
+    is_manual_override = Column(Boolean, default=False)
+    override_reason = Column(Text, nullable=True)
+    last_api_sync = Column(DateTime, nullable=True)
+    last_manual_edit = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
     # Relationships
     team = relationship("Team", back_populates="standings")
     
@@ -31,4 +41,3 @@ class TeamStandings(Base):
     
     def __repr__(self):
         return f"<TeamStandings {self.team_id} - {self.season}: {self.wins}-{self.losses}>"
-

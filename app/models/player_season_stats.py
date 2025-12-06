@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.database import Base
 
 
@@ -25,6 +26,15 @@ class PlayerSeasonStats(Base):
     fg3_pct = Column(Float, nullable=True)
     ft_pct = Column(Float, nullable=True)
     
+    # Source tracking & override
+    source = Column(String(20), default="api")  # 'api' or 'manual'
+    is_manual_override = Column(Boolean, default=False)
+    override_reason = Column(Text, nullable=True)
+    last_api_sync = Column(DateTime, nullable=True)
+    last_manual_edit = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
     # Relationships
     player = relationship("Player", back_populates="season_stats")
     
@@ -34,4 +44,3 @@ class PlayerSeasonStats(Base):
     
     def __repr__(self):
         return f"<PlayerSeasonStats {self.player_id} - {self.season}>"
-

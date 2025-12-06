@@ -666,6 +666,119 @@
             to { transform: rotate(360deg); }
         }
 
+        /* CMS Styles */
+        .cms-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .cms-tab {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cms-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .cms-tab.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .cms-content {
+            display: none;
+        }
+
+        .cms-content.active {
+            display: block;
+        }
+
+        .cms-table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .cms-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .cms-table th {
+            text-align: left;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cms-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .cms-table tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        .cms-table .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .cms-table .btn-edit,
+        .cms-table .btn-delete {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .cms-table .btn-edit:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .cms-table .btn-delete:hover {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .cms-table input {
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            width: 100%;
+        }
+
+        .cms-table input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
         @media (max-width: 768px) {
             .container { padding: 1rem; }
             header { flex-direction: column; gap: 1rem; align-items: flex-start; }
@@ -691,6 +804,7 @@
         <div class="tabs">
             <button class="tab active" data-tab="widgets">📱 Widgets</button>
             <button class="tab" data-tab="api-tester">🧪 API Tester</button>
+            <button class="tab" data-tab="data-management">✏️ Data Management</button>
             <button class="tab" data-tab="cache-metrics">⚡ Cache & Metrics</button>
         </div>
 
@@ -884,6 +998,209 @@
             </div>
         </div>
 
+        <!-- Data Management Tab (CMS) -->
+        <div class="tab-content" id="tab-data-management">
+            <!-- Sub-tabs for different data types -->
+            <div class="cms-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <button class="cms-tab active" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
+                <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
+                <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">🏀 Games</button>
+                <button class="cms-tab" data-cms="standings" onclick="switchCmsTab('standings')">📈 Standings</button>
+            </div>
+
+            <!-- Players CMS -->
+            <div class="cms-content active" id="cms-players">
+                <div class="api-tester">
+                    <h3>👤 Players</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button class="action-btn small" onclick="loadCmsPlayers()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddPlayerForm()">➕ Add Player</button>
+                    </div>
+                    
+                    <!-- Add Player Form (hidden by default) -->
+                    <div id="add-player-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add New Player</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <input type="number" id="new-player-nba-id" placeholder="NBA ID" style="width: 100px;">
+                            <input type="text" id="new-player-name" placeholder="Full Name" style="width: 180px;">
+                            <select id="new-player-team" style="width: 150px;">
+                                <option value="">Team (optional)</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" id="new-player-position" placeholder="Position" style="width: 80px;">
+                            <input type="text" id="new-player-jersey" placeholder="#" style="width: 50px;">
+                            <button class="action-btn small" onclick="addPlayer()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddPlayerForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="cms-table-container">
+                        <table class="cms-table" id="players-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NBA ID</th>
+                                    <th>Name</th>
+                                    <th>Team</th>
+                                    <th>Pos</th>
+                                    <th>#</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="players-tbody">
+                                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats CMS -->
+            <div class="cms-content" id="cms-stats">
+                <div class="api-tester">
+                    <h3>📊 Player Season Stats</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <select id="stats-filter-player" style="width: 150px;">
+                            <option value="">All Players</option>
+                        </select>
+                        <button class="action-btn small" onclick="loadCmsStats()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddStatsForm()">➕ Add Stats</button>
+                    </div>
+                    
+                    <!-- Add Stats Form -->
+                    <div id="add-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Season Stats</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <input type="number" id="new-stats-player-id" placeholder="Player ID" style="width: 100px;">
+                            <input type="text" id="new-stats-season" placeholder="Season" value="{{ settings.current_season }}" style="width: 100px;">
+                            <input type="number" step="0.1" id="new-stats-pts" placeholder="PPG" style="width: 70px;">
+                            <input type="number" step="0.1" id="new-stats-reb" placeholder="RPG" style="width: 70px;">
+                            <input type="number" step="0.1" id="new-stats-ast" placeholder="APG" style="width: 70px;">
+                            <input type="number" step="0.1" id="new-stats-stl" placeholder="SPG" style="width: 70px;">
+                            <input type="number" step="0.1" id="new-stats-blk" placeholder="BPG" style="width: 70px;">
+                            <input type="number" id="new-stats-gp" placeholder="GP" style="width: 60px;">
+                            <button class="action-btn small" onclick="addStats()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddStatsForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="cms-table-container">
+                        <table class="cms-table" id="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Player</th>
+                                    <th>Season</th>
+                                    <th>PPG</th>
+                                    <th>RPG</th>
+                                    <th>APG</th>
+                                    <th>GP</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-tbody">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Games CMS -->
+            <div class="cms-content" id="cms-games">
+                <div class="api-tester">
+                    <h3>🏀 Games</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <select id="games-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="games-filter-status" style="width: 120px;">
+                            <option value="">All Status</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="final">Final</option>
+                        </select>
+                        <button class="action-btn small" onclick="loadCmsGames()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddGameForm()">➕ Add Game</button>
+                    </div>
+                    
+                    <!-- Add Game Form -->
+                    <div id="add-game-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add New Game</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <select id="new-game-home" style="width: 130px;">
+                                <option value="">Home Team</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="new-game-away" style="width: 130px;">
+                                <option value="">Away Team</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="date" id="new-game-date" style="width: 140px;">
+                            <input type="time" id="new-game-time" value="19:30" style="width: 100px;">
+                            <input type="text" id="new-game-season" value="{{ settings.current_season }}" style="width: 90px;">
+                            <button class="action-btn small" onclick="addGame()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddGameForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="cms-table-container">
+                        <table class="cms-table" id="games-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Matchup</th>
+                                    <th>Date</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="games-tbody">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Standings CMS -->
+            <div class="cms-content" id="cms-standings">
+                <div class="api-tester">
+                    <h3>📈 Team Standings</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button class="action-btn small" onclick="loadCmsStandings()">🔄 Refresh</button>
+                    </div>
+                    
+                    <div class="cms-table-container">
+                        <table class="cms-table" id="standings-table">
+                            <thead>
+                                <tr>
+                                    <th>Team</th>
+                                    <th>Wins</th>
+                                    <th>Losses</th>
+                                    <th>Conf Rank</th>
+                                    <th>Streak</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="standings-tbody">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Cache & Metrics Tab -->
         <div class="tab-content" id="tab-cache-metrics">
             <div class="api-tester">
@@ -977,6 +1294,22 @@
             return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
         }
 
+        // Check if a game is still relevant (in future or started within last 3 hours)
+        function isGameStillRelevant(dateStr, timeStr) {
+            const local = formatLocalDate(dateStr, timeStr);
+            const gameDate = local.dateObj;
+            const now = new Date();
+            const threeHoursAgo = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+            
+            // Game is relevant if it starts after 3 hours ago (future or ongoing)
+            return gameDate >= threeHoursAgo;
+        }
+
+        // Filter games to only show future/ongoing games
+        function filterFutureGames(games) {
+            return games.filter(game => isGameStillRelevant(game.date, game.time));
+        }
+
         async function loadAllWidgets() {
             const teamId = document.getElementById('widget-team').value;
             const playerId = document.getElementById('widget-player-id').value;
@@ -995,12 +1328,16 @@
             
             try {
                 const [gamesData, standingData] = await Promise.all([
-                    fetch(`${API_BASE}/teams/${teamId}/next-games?count=3`).then(r => r.json()),
+                    // Fetch more games than needed so we can filter
+                    fetch(`${API_BASE}/teams/${teamId}/next-games?count=10`).then(r => r.json()),
                     fetch(`${API_BASE}/teams/${teamId}/standings`).then(r => r.json())
                 ]);
                 
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
                 const record = `${standingData.wins}-${standingData.losses}`;
+                
+                // Filter to only future/ongoing games and take first 3
+                const futureGames = filterFutureGames(gamesData.games).slice(0, 3);
                 
                 let html = `
                     <div class="team-header">
@@ -1009,17 +1346,21 @@
                     </div>
                 `;
                 
-                for (const game of gamesData.games) {
-                    const local = formatLocalDate(game.date, game.time);
-                    const vsAt = game.is_home ? 'vs' : '@';
-                    
-                    html += `
-                        <div class="game-row">
-                            <span class="game-vs">${vsAt}</span>
-                            <span class="game-opponent">${game.opponent}</span>
-                            <span class="game-datetime">${local.date} ${local.time}</span>
-                        </div>
-                    `;
+                if (futureGames.length === 0) {
+                    html += '<div style="color: var(--text-muted); padding: 0.5rem 0;">No upcoming games scheduled</div>';
+                } else {
+                    for (const game of futureGames) {
+                        const local = formatLocalDate(game.date, game.time);
+                        const vsAt = game.is_home ? 'vs' : '@';
+                        
+                        html += `
+                            <div class="game-row">
+                                <span class="game-vs">${vsAt}</span>
+                                <span class="game-opponent">${game.opponent}</span>
+                                <span class="game-datetime">${local.date} ${local.time}</span>
+                            </div>
+                        `;
+                    }
                 }
                 
                 container.innerHTML = html;
@@ -1137,19 +1478,26 @@
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
             
             try {
-                const data = await fetch(`${API_BASE}/teams/${teamId}/next-games?count=1`).then(r => r.json());
+                // Fetch more games to filter
+                const data = await fetch(`${API_BASE}/teams/${teamId}/next-games?count=5`).then(r => r.json());
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
                 
-                if (data.games.length === 0) {
-                    container.innerHTML = 'No upcoming games';
+                // Filter to only future/ongoing games
+                const futureGames = filterFutureGames(data.games);
+                
+                if (futureGames.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No upcoming games</div>';
                     return;
                 }
                 
-                const game = data.games[0];
+                const game = futureGames[0];
                 const local = formatLocalDate(game.date, game.time);
                 const gameDate = local.dateObj;
                 const now = new Date();
                 const diff = gameDate - now;
+                
+                // Check if game is currently in progress (started but within 3 hours)
+                const isInProgress = diff < 0 && diff > -(3 * 60 * 60 * 1000);
                 
                 const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
                 const hours = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
@@ -1157,24 +1505,37 @@
                 
                 const matchup = game.is_home ? `${game.opponent} vs ${teamAbbr}` : `${teamAbbr} @ ${game.opponent}`;
                 
-                container.innerHTML = `
-                    <div class="matchup">${matchup}</div>
-                    <div class="countdown-display">
-                        <div class="countdown-item">
-                            <div class="countdown-value">${days}</div>
-                            <div class="countdown-label">Days</div>
+                if (isInProgress) {
+                    container.innerHTML = `
+                        <div class="matchup">${matchup}</div>
+                        <div class="countdown-display">
+                            <div class="countdown-item">
+                                <div class="countdown-value" style="color: var(--accent-green);">LIVE</div>
+                                <div class="countdown-label">In Progress</div>
+                            </div>
                         </div>
-                        <div class="countdown-item">
-                            <div class="countdown-value">${hours}</div>
-                            <div class="countdown-label">Hours</div>
+                        <div class="game-datetime">Started at ${local.time}</div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="matchup">${matchup}</div>
+                        <div class="countdown-display">
+                            <div class="countdown-item">
+                                <div class="countdown-value">${days}</div>
+                                <div class="countdown-label">Days</div>
+                            </div>
+                            <div class="countdown-item">
+                                <div class="countdown-value">${hours}</div>
+                                <div class="countdown-label">Hours</div>
+                            </div>
+                            <div class="countdown-item">
+                                <div class="countdown-value">${mins}</div>
+                                <div class="countdown-label">Mins</div>
+                            </div>
                         </div>
-                        <div class="countdown-item">
-                            <div class="countdown-value">${mins}</div>
-                            <div class="countdown-label">Mins</div>
-                        </div>
-                    </div>
-                    <div class="game-datetime">${local.full} at ${local.time}</div>
-                `;
+                        <div class="game-datetime">${local.full} at ${local.time}</div>
+                    `;
+                }
             } catch (e) {
                 container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
             }
@@ -1403,9 +1764,391 @@
             }
         }
 
+        // =====================
+        // CMS FUNCTIONS
+        // =====================
+
+        function switchCmsTab(tabName) {
+            document.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.cms-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.cms-tab[data-cms="${tabName}"]`).classList.add('active');
+            document.getElementById(`cms-${tabName}`).classList.add('active');
+            
+            // Load data for the tab
+            if (tabName === 'players') loadCmsPlayers();
+            if (tabName === 'stats') loadCmsStats();
+            if (tabName === 'games') loadCmsGames();
+            if (tabName === 'standings') loadCmsStandings();
+        }
+
+        // Show/hide forms
+        function showAddPlayerForm() { document.getElementById('add-player-form').style.display = 'block'; }
+        function hideAddPlayerForm() { document.getElementById('add-player-form').style.display = 'none'; }
+        function showAddStatsForm() { document.getElementById('add-stats-form').style.display = 'block'; }
+        function hideAddStatsForm() { document.getElementById('add-stats-form').style.display = 'none'; }
+        function showAddGameForm() { document.getElementById('add-game-form').style.display = 'block'; }
+        function hideAddGameForm() { document.getElementById('add-game-form').style.display = 'none'; }
+
+        // PLAYERS
+        async function loadCmsPlayers() {
+            const tbody = document.getElementById('players-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            try {
+                const data = await apiCall('/admin/data/players');
+                if (data.players.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No players found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.players.map(p => `
+                    <tr data-id="${p.id}">
+                        <td>${p.id}</td>
+                        <td>${p.nba_player_id}</td>
+                        <td><input type="text" value="${p.full_name || ''}" data-field="full_name"></td>
+                        <td>${p.team || '-'}</td>
+                        <td><input type="text" value="${p.position || ''}" data-field="position" style="width: 50px;"></td>
+                        <td><input type="text" value="${p.jersey_number || ''}" data-field="jersey_number" style="width: 40px;"></td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="savePlayer(${p.id})">💾</button>
+                            <button class="btn-delete" onclick="deletePlayer(${p.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        async function addPlayer() {
+            const nbaId = document.getElementById('new-player-nba-id').value;
+            const name = document.getElementById('new-player-name').value;
+            const teamId = document.getElementById('new-player-team').value;
+            const position = document.getElementById('new-player-position').value;
+            const jersey = document.getElementById('new-player-jersey').value;
+            
+            if (!nbaId || !name) {
+                showToast('NBA ID and Name required', 'error');
+                return;
+            }
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nba_player_id: parseInt(nbaId),
+                        full_name: name,
+                        team_id: teamId ? parseInt(teamId) : null,
+                        position: position || null,
+                        jersey_number: jersey || null
+                    })
+                });
+                showToast('Player added!');
+                hideAddPlayerForm();
+                loadCmsPlayers();
+            } catch (e) {
+                showToast('Error adding player', 'error');
+            }
+        }
+
+        async function savePlayer(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const data = {};
+            row.querySelectorAll('input[data-field]').forEach(input => {
+                data[input.dataset.field] = input.value || null;
+            });
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/players/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Player saved!');
+            } catch (e) {
+                showToast('Error saving', 'error');
+            }
+        }
+
+        async function deletePlayer(id) {
+            if (!confirm('Delete this player?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/data/players/${id}`, { method: 'DELETE' });
+                showToast('Player deleted');
+                loadCmsPlayers();
+            } catch (e) {
+                showToast('Error deleting', 'error');
+            }
+        }
+
+        // STATS
+        async function loadCmsStats() {
+            const tbody = document.getElementById('stats-tbody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            const playerId = document.getElementById('stats-filter-player').value;
+            let url = '/admin/data/player-stats';
+            if (playerId) url += `?player_id=${playerId}`;
+            
+            try {
+                const data = await apiCall(url);
+                if (data.stats.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No stats found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.stats.map(s => `
+                    <tr data-id="${s.id}">
+                        <td>${s.id}</td>
+                        <td>${s.player_name || s.player_id}</td>
+                        <td>${s.season}</td>
+                        <td><input type="number" step="0.1" value="${s.pts}" data-field="pts" style="width: 60px;"></td>
+                        <td><input type="number" step="0.1" value="${s.reb}" data-field="reb" style="width: 60px;"></td>
+                        <td><input type="number" step="0.1" value="${s.ast}" data-field="ast" style="width: 60px;"></td>
+                        <td><input type="number" value="${s.games_played}" data-field="games_played" style="width: 50px;"></td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="saveStats(${s.id})">💾</button>
+                            <button class="btn-delete" onclick="deleteStats(${s.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        async function addStats() {
+            const playerId = document.getElementById('new-stats-player-id').value;
+            const season = document.getElementById('new-stats-season').value;
+            
+            if (!playerId || !season) {
+                showToast('Player ID and Season required', 'error');
+                return;
+            }
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/player-stats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player_id: parseInt(playerId),
+                        season: season,
+                        pts: parseFloat(document.getElementById('new-stats-pts').value) || 0,
+                        reb: parseFloat(document.getElementById('new-stats-reb').value) || 0,
+                        ast: parseFloat(document.getElementById('new-stats-ast').value) || 0,
+                        stl: parseFloat(document.getElementById('new-stats-stl').value) || 0,
+                        blk: parseFloat(document.getElementById('new-stats-blk').value) || 0,
+                        games_played: parseInt(document.getElementById('new-stats-gp').value) || 0
+                    })
+                });
+                showToast('Stats added!');
+                hideAddStatsForm();
+                loadCmsStats();
+            } catch (e) {
+                showToast('Error adding stats', 'error');
+            }
+        }
+
+        async function saveStats(id) {
+            const row = document.querySelector(`#stats-table tr[data-id="${id}"]`);
+            const data = {};
+            row.querySelectorAll('input[data-field]').forEach(input => {
+                data[input.dataset.field] = input.type === 'number' ? parseFloat(input.value) : input.value;
+            });
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/player-stats/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Stats saved!');
+            } catch (e) {
+                showToast('Error saving', 'error');
+            }
+        }
+
+        async function deleteStats(id) {
+            if (!confirm('Delete these stats?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/data/player-stats/${id}`, { method: 'DELETE' });
+                showToast('Stats deleted');
+                loadCmsStats();
+            } catch (e) {
+                showToast('Error deleting', 'error');
+            }
+        }
+
+        // GAMES
+        async function loadCmsGames() {
+            const tbody = document.getElementById('games-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            const teamId = document.getElementById('games-filter-team').value;
+            const status = document.getElementById('games-filter-status').value;
+            let url = '/admin/data/games?limit=50';
+            if (teamId) url += `&team_id=${teamId}`;
+            if (status) url += `&status=${status}`;
+            
+            try {
+                const data = await apiCall(url);
+                if (data.games.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No games found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.games.map(g => `
+                    <tr data-id="${g.id}">
+                        <td>${g.id}</td>
+                        <td>${g.away_team} @ ${g.home_team}</td>
+                        <td>${g.game_date || '-'}</td>
+                        <td>
+                            <input type="number" value="${g.home_score || ''}" data-field="home_score" style="width: 50px;" placeholder="H">
+                            -
+                            <input type="number" value="${g.away_score || ''}" data-field="away_score" style="width: 50px;" placeholder="A">
+                        </td>
+                        <td>
+                            <select data-field="status" style="width: 100px;">
+                                <option value="scheduled" ${g.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+                                <option value="live" ${g.status === 'live' ? 'selected' : ''}>Live</option>
+                                <option value="final" ${g.status === 'final' ? 'selected' : ''}>Final</option>
+                            </select>
+                        </td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="saveGame(${g.id})">💾</button>
+                            <button class="btn-delete" onclick="deleteGame(${g.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        async function addGame() {
+            const homeId = document.getElementById('new-game-home').value;
+            const awayId = document.getElementById('new-game-away').value;
+            const gameDate = document.getElementById('new-game-date').value;
+            const gameTime = document.getElementById('new-game-time').value;
+            const season = document.getElementById('new-game-season').value;
+            
+            if (!homeId || !awayId || !gameDate) {
+                showToast('Home, Away, and Date required', 'error');
+                return;
+            }
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/games`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        home_team_id: parseInt(homeId),
+                        away_team_id: parseInt(awayId),
+                        game_date: gameDate,
+                        game_time: gameTime || '19:30',
+                        season: season
+                    })
+                });
+                showToast('Game added!');
+                hideAddGameForm();
+                loadCmsGames();
+            } catch (e) {
+                showToast('Error adding game', 'error');
+            }
+        }
+
+        async function saveGame(id) {
+            const row = document.querySelector(`#games-table tr[data-id="${id}"]`);
+            const data = {};
+            row.querySelectorAll('[data-field]').forEach(el => {
+                const val = el.value;
+                if (el.type === 'number') {
+                    data[el.dataset.field] = val ? parseInt(val) : null;
+                } else {
+                    data[el.dataset.field] = val;
+                }
+            });
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/games/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Game saved!');
+            } catch (e) {
+                showToast('Error saving', 'error');
+            }
+        }
+
+        async function deleteGame(id) {
+            if (!confirm('Delete this game?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/data/games/${id}`, { method: 'DELETE' });
+                showToast('Game deleted');
+                loadCmsGames();
+            } catch (e) {
+                showToast('Error deleting', 'error');
+            }
+        }
+
+        // STANDINGS
+        async function loadCmsStandings() {
+            const tbody = document.getElementById('standings-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            try {
+                const data = await apiCall('/admin/data/standings');
+                if (data.standings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No standings found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.standings.map(s => `
+                    <tr data-team-id="${s.team_id}">
+                        <td>${s.team} - ${s.team_name}</td>
+                        <td><input type="number" value="${s.wins}" data-field="wins" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.losses}" data-field="losses" style="width: 50px;"></td>
+                        <td><input type="number" value="${s.conference_rank || ''}" data-field="conference_rank" style="width: 50px;"></td>
+                        <td><input type="text" value="${s.streak || ''}" data-field="streak" style="width: 60px;"></td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="saveStandings(${s.team_id})">💾</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        async function saveStandings(teamId) {
+            const row = document.querySelector(`#standings-table tr[data-team-id="${teamId}"]`);
+            const data = {};
+            row.querySelectorAll('input[data-field]').forEach(input => {
+                if (input.type === 'number') {
+                    data[input.dataset.field] = input.value ? parseInt(input.value) : null;
+                } else {
+                    data[input.dataset.field] = input.value || null;
+                }
+            });
+            
+            try {
+                await fetch(`${API_BASE}/admin/data/standings/${teamId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Standings saved!');
+            } catch (e) {
+                showToast('Error saving', 'error');
+            }
+        }
+
         // Initial load
         loadAllWidgets();
         loadDbStats();
+        loadCmsPlayers();  // Pre-load CMS data
         setInterval(updateMetrics, 10000);
     </script>
 </body>

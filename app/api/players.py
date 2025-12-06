@@ -75,21 +75,27 @@ async def get_player_season_averages(
     
     Example: /api/players/201939/season-averages
     """
-    # Auto-create player if needed
-    player = await PlayerService.get_or_create_player(db, nba_player_id)
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    stats = await PlayerService.get_player_season_averages(
-        db,
-        player_id=player.id,
-        season=season or settings.current_season,
-        season_type=season_type,
-        force_refresh=refresh,
-    )
-    if not stats:
-        raise HTTPException(status_code=404, detail="Stats not found for this season")
-    return stats
+    try:
+        # Auto-create player if needed
+        player = await PlayerService.get_or_create_player(db, nba_player_id)
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        stats = await PlayerService.get_player_season_averages(
+            db,
+            player_id=player.id,
+            season=season or settings.current_season,
+            season_type=season_type,
+            force_refresh=refresh,
+        )
+        if not stats:
+            raise HTTPException(status_code=404, detail="Stats not found for this season")
+        return stats
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting season averages for player {nba_player_id}: {e}")
+        raise HTTPException(status_code=503, detail="NBA API temporarily unavailable, please try again")
 
 
 @router.get("/{nba_player_id}/latest-game")
@@ -113,19 +119,25 @@ async def get_player_latest_game(
     
     Example: /api/players/201939/latest-game
     """
-    # Auto-create player if needed
-    player = await PlayerService.get_or_create_player(db, nba_player_id)
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    game = await PlayerService.get_player_latest_game(
-        db,
-        player_id=player.id,
-        season=season or settings.current_season,
-        season_type=season_type,
-        force_refresh=refresh,
-    )
-    if not game:
-        raise HTTPException(status_code=404, detail="No recent game found")
-    return game
+    try:
+        # Auto-create player if needed
+        player = await PlayerService.get_or_create_player(db, nba_player_id)
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        game = await PlayerService.get_player_latest_game(
+            db,
+            player_id=player.id,
+            season=season or settings.current_season,
+            season_type=season_type,
+            force_refresh=refresh,
+        )
+        if not game:
+            raise HTTPException(status_code=404, detail="No recent game found")
+        return game
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting latest game for player {nba_player_id}: {e}")
+        raise HTTPException(status_code=503, detail="NBA API temporarily unavailable, please try again")
 

@@ -55,15 +55,19 @@ async def get_next_games(
     - **season_type**: "Regular Season" or "Playoffs"
     - **refresh**: Force refresh from NBA API
     """
-    games = await GameService.get_next_games(
-        db,
-        team_id=team_id,
-        count=count,
-        season=season or settings.current_season,
-        season_type=season_type,
-        force_refresh=refresh,
-    )
-    return {"team_id": team_id, "games": games, "count": len(games)}
+    try:
+        games = await GameService.get_next_games(
+            db,
+            team_id=team_id,
+            count=count,
+            season=season or settings.current_season,
+            season_type=season_type,
+            force_refresh=refresh,
+        )
+        return {"team_id": team_id, "games": games, "count": len(games)}
+    except Exception as e:
+        print(f"Error getting next games for team {team_id}: {e}")
+        return {"team_id": team_id, "games": [], "count": 0, "error": "Data temporarily unavailable"}
 
 
 @router.get("/{team_id}/last-games")
@@ -84,15 +88,20 @@ async def get_last_games(
     - **season_type**: "Regular Season" or "Playoffs"
     - **refresh**: Force refresh from NBA API
     """
-    games = await GameService.get_last_games(
-        db,
-        team_id=team_id,
-        count=count,
-        season=season or settings.current_season,
-        season_type=season_type,
-        force_refresh=refresh,
-    )
-    return {"team_id": team_id, "games": games, "count": len(games)}
+    try:
+        games = await GameService.get_last_games(
+            db,
+            team_id=team_id,
+            count=count,
+            season=season or settings.current_season,
+            season_type=season_type,
+            force_refresh=refresh,
+        )
+        return {"team_id": team_id, "games": games, "count": len(games)}
+    except Exception as e:
+        # Return empty list on error instead of 500
+        print(f"Error getting last games for team {team_id}: {e}")
+        return {"team_id": team_id, "games": [], "count": 0, "error": "Data temporarily unavailable"}
 
 
 @router.get("/{team_id}/standings")
@@ -113,16 +122,22 @@ async def get_team_standings(
     - **season_type**: "Regular Season" or "Playoffs"
     - **refresh**: Force refresh from NBA API
     """
-    standing = await StandingsService.get_team_standing(
-        db,
-        team_id=team_id,
-        season=season or settings.current_season,
-        season_type=season_type,
-        force_refresh=refresh,
-    )
-    if not standing:
-        raise HTTPException(status_code=404, detail="Standings not found")
-    return standing
+    try:
+        standing = await StandingsService.get_team_standing(
+            db,
+            team_id=team_id,
+            season=season or settings.current_season,
+            season_type=season_type,
+            force_refresh=refresh,
+        )
+        if not standing:
+            raise HTTPException(status_code=404, detail="Standings not found")
+        return standing
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting standings for team {team_id}: {e}")
+        return {"team_id": team_id, "error": "Data temporarily unavailable"}
 
 
 @router.get("/standings/{conference}")
@@ -170,21 +185,27 @@ async def get_team_roster(
     
     Example: /api/teams/2/roster
     """
-    # Get team to get NBA team ID
-    team = await TeamService.get_team_by_id(db, team_id)
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-    
-    roster = NBAClient.get_team_roster(
-        team["nba_team_id"],
-        season=season or settings.current_season
-    )
-    
-    return {
-        "team_id": team_id,
-        "team_name": team["name"],
-        "season": season or settings.current_season,
-        "roster": roster,
-        "count": len(roster)
-    }
+    try:
+        # Get team to get NBA team ID
+        team = await TeamService.get_team_by_id(db, team_id)
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
+        
+        roster = NBAClient.get_team_roster(
+            team["nba_team_id"],
+            season=season or settings.current_season
+        )
+        
+        return {
+            "team_id": team_id,
+            "team_name": team["name"],
+            "season": season or settings.current_season,
+            "roster": roster,
+            "count": len(roster)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting roster for team {team_id}: {e}")
+        return {"team_id": team_id, "roster": [], "count": 0, "error": "Data temporarily unavailable"}
 
