@@ -4,6 +4,7 @@ from app.models.game import Game
 from app.models.player_season_stats import PlayerSeasonStats
 from app.models.team_standings import TeamStandings
 from app.models.player_game_stats import PlayerGameStats
+from app.models.cron_job import CronJob, CronRun
 
 __all__ = [
     "Team",
@@ -12,5 +13,7 @@ __all__ = [
     "PlayerSeasonStats",
     "TeamStandings",
     "PlayerGameStats",
+    "CronJob",
+    "CronRun",
 ]
 

@@ -800,9 +800,122 @@
             .tabs { flex-wrap: wrap; }
             .widgets-grid { grid-template-columns: 1fr; }
         }
+
+        /* Custom Modal Styles */
+        .custom-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .custom-modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        .custom-modal h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .custom-modal p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .custom-modal-buttons button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .custom-modal-buttons .btn-cancel {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .custom-modal-buttons .btn-cancel:hover {
+            background: var(--bg-hover);
+        }
+
+        .custom-modal-buttons .btn-confirm {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .custom-modal-buttons .btn-confirm:hover {
+            background: #ff8559;
+        }
+
+        .custom-modal-buttons .btn-confirm.danger {
+            background: var(--accent-red);
+        }
+
+        .custom-modal-buttons .btn-confirm.danger:hover {
+            background: #f87171;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Custom Confirmation Modal -->
+    <div id="customModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeCustomModal()">
+        <div class="custom-modal">
+            <h3 id="customModalTitle">Confirm Action</h3>
+            <p id="customModalMessage">Are you sure you want to proceed?</p>
+            <div class="custom-modal-buttons">
+                <button class="btn-cancel" onclick="closeCustomModal()">Cancel</button>
+                <button class="btn-confirm" id="customModalConfirm" onclick="confirmCustomModal()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <div class="logo">
@@ -821,6 +934,7 @@
             <button class="tab" data-tab="api-tester">🧪 API Tester</button>
             <button class="tab" data-tab="data-management">✏️ Data Management</button>
             <button class="tab" data-tab="cache-metrics">⚡ Cache & Metrics</button>
+            <button class="tab" data-tab="cron-management">⏰ Cron Management</button>
         </div>
 
         <!-- Widgets Tab -->
@@ -1349,6 +1463,92 @@
                 </button>
             </div>
         </div>
+
+        <!-- Cron Management Tab -->
+        <div class="tab-content" id="tab-cron-management">
+            <div class="api-tester">
+                <h3>⏰ Cron Jobs</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="action-btn small" onclick="loadCronJobs()">🔄 Refresh</button>
+                </div>
+                
+                <div class="cms-table-container">
+                    <table class="cms-table" id="cron-jobs-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Schedule</th>
+                                <th>Status</th>
+                                <th>Last Run</th>
+                                <th>Next Run</th>
+                                <th>Total Runs</th>
+                                <th>Success Rate</th>
+                                <th class="sticky-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cron-jobs-tbody">
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Running Job Logs Section -->
+                <div class="api-tester" id="running-job-logs" style="display: none; margin-top: 2rem;">
+                    <h3>📋 Live Logs - <span id="running-job-name"></span></h3>
+                    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.875rem;">
+                        <div id="running-job-log-content" style="color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;">
+                            Waiting for logs...
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="action-btn small" onclick="stopWatchingLogs()">❌ Stop Watching</button>
+                        <button class="action-btn small" onclick="refreshRunningJobLogs()">🔄 Refresh</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-tester">
+                <h3>📋 Recent Cron Runs</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                    <select id="cron-runs-filter-job" style="width: 200px;">
+                        <option value="">All Jobs</option>
+                    </select>
+                    <select id="cron-runs-filter-status" style="width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="success">Success</option>
+                        <option value="failed">Failed</option>
+                        <option value="running">Running</option>
+                    </select>
+                    <button class="action-btn small" onclick="loadCronRuns()">🔄 Refresh</button>
+                </div>
+                <div id="cron-runs-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <span id="cron-runs-pagination-info">Loading...</span>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="action-btn small" id="cron-runs-prev" onclick="loadCronRunsPage(-1)" disabled>← Prev</button>
+                        <button class="action-btn small" id="cron-runs-next" onclick="loadCronRunsPage(1)" disabled>Next →</button>
+                    </div>
+                </div>
+                
+                <div class="cms-table-container">
+                    <table class="cms-table" id="cron-runs-table">
+                        <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>Started</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Items Updated</th>
+                                <th>Details</th>
+                                <th style="min-width: 250px;">Actions & Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cron-runs-tbody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="toast" id="toast">
@@ -1358,13 +1558,81 @@
     <script>
         const API_BASE = '/api';
 
+        // =====================
+        // CUSTOM MODAL FUNCTIONS
+        // =====================
+        let customModalCallback = null;
+
+        function showCustomModal(title, message, confirmText = 'Confirm', isDanger = false) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customModalOverlay');
+                const titleEl = document.getElementById('customModalTitle');
+                const messageEl = document.getElementById('customModalMessage');
+                const confirmBtn = document.getElementById('customModalConfirm');
+                
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                confirmBtn.textContent = confirmText;
+                
+                // Set danger styling if needed
+                if (isDanger) {
+                    confirmBtn.classList.add('danger');
+                } else {
+                    confirmBtn.classList.remove('danger');
+                }
+                
+                // Store callback
+                customModalCallback = resolve;
+                
+                // Show modal
+                overlay.classList.add('active');
+                
+                // Focus confirm button
+                setTimeout(() => confirmBtn.focus(), 100);
+            });
+        }
+
+        function closeCustomModal() {
+            const overlay = document.getElementById('customModalOverlay');
+            overlay.classList.remove('active');
+            if (customModalCallback) {
+                customModalCallback(false);
+                customModalCallback = null;
+            }
+        }
+
+        function confirmCustomModal() {
+            const overlay = document.getElementById('customModalOverlay');
+            overlay.classList.remove('active');
+            if (customModalCallback) {
+                customModalCallback(true);
+                customModalCallback = null;
+            }
+        }
+
+        // Allow ESC to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('customModalOverlay').classList.contains('active')) {
+                closeCustomModal();
+            }
+        });
+
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 tab.classList.add('active');
-                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                const tabContent = document.getElementById('tab-' + tab.dataset.tab);
+                if (tabContent) {
+                    tabContent.classList.add('active');
+                    
+                    // Auto-load data for specific tabs
+                    if (tab.dataset.tab === 'cron-management') {
+                        loadCronJobs();
+                        loadCronRuns();
+                    }
+                }
             });
         });
 
@@ -2478,6 +2746,423 @@
         document.getElementById('game-stats-filter-team')?.addEventListener('change', () => {
             cmsPagination.gameStats.offset = 0;
         });
+
+        // Cron runs filter listeners
+        document.getElementById('cron-runs-filter-job')?.addEventListener('change', () => {
+            cronRunsPagination.offset = 0;
+        });
+        document.getElementById('cron-runs-filter-status')?.addEventListener('change', () => {
+            cronRunsPagination.offset = 0;
+        });
+
+        // =====================
+        // CRON MANAGEMENT FUNCTIONS
+        // =====================
+
+        const cronRunsPagination = { offset: 0, limit: 50, total: 0 };
+
+        async function loadCronJobs() {
+            const tbody = document.getElementById('cron-jobs-tbody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            try {
+                // Cleanup stuck jobs first (wait for it to complete)
+                try {
+                    await fetch(`${API_BASE}/admin/cron/cleanup-stuck`, { method: 'POST' });
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+                
+                const data = await apiCall('/admin/cron/jobs');
+                
+                if (data.jobs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No cron jobs found</td></tr>';
+                    return;
+                }
+                
+                // Populate job filter dropdown
+                const jobFilter = document.getElementById('cron-runs-filter-job');
+                if (jobFilter) {
+                    jobFilter.innerHTML = '<option value="">All Jobs</option>' + 
+                        data.jobs.map(j => `<option value="${j.name}">${j.name}</option>`).join('');
+                }
+                
+                tbody.innerHTML = data.jobs.map(job => {
+                    const statusBadge = job.is_active 
+                        ? '<span style="color: var(--accent-green);">● Active</span>'
+                        : '<span style="color: var(--text-muted);">○ Inactive</span>';
+                    
+                    const successColor = job.success_rate >= 90 ? 'var(--accent-green)' : 
+                                       job.success_rate >= 70 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+                    
+                    return `
+                        <tr data-job-id="${job.id}">
+                            <td><strong>${job.name}</strong><br><small style="color: var(--text-muted);">${job.description || ''}</small></td>
+                            <td>${job.schedule}</td>
+                            <td>${statusBadge}</td>
+                            <td>${job.last_run ? new Date(job.last_run).toLocaleString() : 'Never'}</td>
+                            <td>${job.next_run ? new Date(job.next_run).toLocaleString() : 'N/A'}</td>
+                            <td>${job.total_runs}</td>
+                            <td><span style="color: ${successColor};">${job.success_rate}%</span><br><small>${job.successful_runs}/${job.total_runs}</small></td>
+                            <td class="actions sticky-actions">
+                                <button class="btn-edit" onclick="triggerCronJob(${job.id}, '${job.name}')" title="▶️ Run Now - Manually trigger this job immediately">▶️ Run</button>
+                                <button class="btn-edit" onclick="toggleCronJob(${job.id})" title="${job.is_active ? '⏸️ Pause - Disable automatic scheduling' : '▶️ Resume - Enable automatic scheduling'}">${job.is_active ? '⏸️ Pause' : '▶️ Resume'}</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        async function loadCronRuns() {
+            const tbody = document.getElementById('cron-runs-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            
+            // Cleanup stuck jobs first
+            try {
+                await fetch(`${API_BASE}/admin/cron/cleanup-stuck`, { method: 'POST' });
+            } catch (e) {
+                // Ignore cleanup errors
+            }
+            
+            const jobName = document.getElementById('cron-runs-filter-job')?.value;
+            const status = document.getElementById('cron-runs-filter-status')?.value;
+            const pag = cronRunsPagination;
+            
+            let url = `/admin/cron/runs?limit=${pag.limit}&offset=${pag.offset}`;
+            if (jobName) url += `&job_name=${encodeURIComponent(jobName)}`;
+            if (status) url += `&status=${status}`;
+            
+            try {
+                const data = await apiCall(url);
+                pag.total = data.total || 0;
+                
+                let runs = data.runs;
+                
+                if (runs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No runs found</td></tr>';
+                    updateCronRunsPaginationUI(pag);
+                    return;
+                }
+                
+                tbody.innerHTML = runs.map(run => {
+                    // Check if job is actually stuck (running for more than 1 hour)
+                    let isRunning = run.status === 'running';
+                    let isStuck = false;
+                    if (isRunning && run.started_at) {
+                        const elapsed = Math.floor((new Date() - new Date(run.started_at)) / 1000);
+                        const elapsedHours = elapsed / 3600;
+                        isStuck = elapsedHours > 1; // Stuck if running for more than 1 hour
+                        // If stuck, mark as failed in UI (but don't change DB yet - cleanup will do that)
+                        if (isStuck) {
+                            isRunning = false; // Don't show as running if stuck
+                        }
+                    }
+                    
+                    const statusColor = run.status === 'success' ? 'var(--accent-green)' :
+                                       run.status === 'failed' || isStuck ? 'var(--accent-red)' : 'var(--accent-yellow)';
+                    
+                    let duration = run.duration_seconds ? `${run.duration_seconds}s` : '-';
+                    let statusDisplay = run.status.toUpperCase();
+                    if (isStuck) {
+                        statusDisplay = 'STUCK';
+                        const elapsed = Math.floor((new Date() - new Date(run.started_at)) / 1000);
+                        duration = `${Math.floor(elapsed / 3600)}h ${Math.floor((elapsed % 3600) / 60)}m (stuck)`;
+                    } else if (run.status === 'running') {
+                        // Calculate elapsed time
+                        const elapsed = Math.floor((new Date() - new Date(run.started_at)) / 1000);
+                        duration = `${Math.floor(elapsed / 60)}m ${elapsed % 60}s (running)`;
+                    }
+                    
+                    const details = run.details ? JSON.stringify(run.details, null, 2).substring(0, 100) + '...' : '-';
+                    const rowStyle = (run.status === 'running' && !isStuck) ? 'background: rgba(255, 193, 7, 0.1); font-weight: 500;' : 
+                                    isStuck ? 'background: rgba(255, 0, 0, 0.1); font-weight: 500;' : '';
+                    
+                    return `
+                        <tr style="${rowStyle}">
+                            <td><strong>${run.job_name}</strong>${(run.status === 'running' && !isStuck) ? ' <span style="color: var(--accent-yellow);">⏳</span>' : ''}${isStuck ? ' <span style="color: var(--accent-red);">⚠️ STUCK</span>' : ''}</td>
+                            <td>${new Date(run.started_at).toLocaleString()}</td>
+                            <td>${duration}</td>
+                            <td><span style="color: ${statusColor}; font-weight: ${(run.status === 'running' && !isStuck) ? 'bold' : 'normal'};">${statusDisplay}</span></td>
+                            <td>${run.items_updated || 0}</td>
+                            <td><small style="color: var(--text-muted); font-family: monospace;">${details}</small></td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                    ${(run.status === 'running' && !isStuck) ? `
+                                        <button class="btn-edit" onclick="startWatchingLogs(${run.id}, '${run.job_name}')" title="📋 View Live Logs">📋 Logs</button>
+                                        <button class="btn-delete" onclick="stopCronRun(${run.id})" title="⏹️ Stop Running Job">⏹️ Stop</button>
+                                    ` : `
+                                        <button class="btn-edit" onclick="startWatchingLogs(${run.id}, '${run.job_name}')" title="📋 View Logs">📋 Logs</button>
+                                    `}
+                                    ${isStuck ? `<button class="btn-delete" onclick="stopCronRun(${run.id})" title="⏹️ Force Stop Stuck Job">⏹️ Force Stop</button>` : ''}
+                                    <button class="btn-delete" onclick="deleteCronRun(${run.id})" title="🗑️ Delete This Run">🗑️</button>
+                                </div>
+                                ${run.error_message || isStuck ? `<div style="color: var(--accent-red); font-size: 0.75rem; line-height: 1.4;">${run.error_message || 'Job appears to be stuck (running for over 1 hour)'}</div>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // Auto-refresh if there are running jobs
+                const hasRunning = runs.some(r => r.status === 'running');
+                if (hasRunning && !logWatchInterval) {
+                    // Refresh runs every 5 seconds if there are running jobs
+                    setTimeout(loadCronRuns, 5000);
+                }
+                
+                updateCronRunsPaginationUI(pag);
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+            }
+        }
+
+        function loadCronRunsPage(direction) {
+            const pag = cronRunsPagination;
+            pag.offset = Math.max(0, pag.offset + (direction * pag.limit));
+            loadCronRuns();
+        }
+
+        function updateCronRunsPaginationUI(pag) {
+            const infoEl = document.getElementById('cron-runs-pagination-info');
+            const prevBtn = document.getElementById('cron-runs-prev');
+            const nextBtn = document.getElementById('cron-runs-next');
+            
+            if (infoEl) {
+                const start = pag.offset + 1;
+                const end = Math.min(pag.offset + pag.limit, pag.total);
+                infoEl.textContent = `Showing ${start}-${end} of ${pag.total}`;
+            }
+            
+            if (prevBtn) prevBtn.disabled = pag.offset === 0;
+            if (nextBtn) nextBtn.disabled = pag.offset + pag.limit >= pag.total;
+        }
+
+        let logWatchInterval = null;
+        let watchedRunId = null;
+
+        async function triggerCronJob(jobId, jobName) {
+            let hoursBack = 7; // Default
+            
+            // For update_finished_games, ask for hours_back parameter
+            if (jobName === 'update_finished_games') {
+                const userInput = prompt('How many hours back to check for finished games?', '7');
+                if (userInput === null) return; // Cancelled
+                hoursBack = parseInt(userInput) || 7;
+            }
+            
+            const confirmed = await showCustomModal(
+                '▶️ Trigger Cron Job',
+                `Run "${jobName}" now?${jobName === 'update_finished_games' ? ` (Checking last ${hoursBack} hours)` : ''}\n\nThis will execute the job immediately in the background.`,
+                'Run Now',
+                false
+            );
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/cron/jobs/${jobId}/trigger?hours_back=${hoursBack}`, { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to trigger job');
+                
+                showToast('Cron job triggered! Watching logs...');
+                
+                // Wait a moment for the run to be created, then find it and watch logs
+                setTimeout(async () => {
+                    await loadCronRuns();
+                    // Find the most recent running job for this job name
+                    const runs = await fetch(`${API_BASE}/admin/cron/runs?limit=5&status=running`).then(r => r.json()).then(d => d.runs || []);
+                    const recentRun = runs.find(r => r.job_name === jobName);
+                    if (recentRun) {
+                        startWatchingLogs(recentRun.id, jobName);
+                    } else {
+                        // Try again after a bit more time
+                        setTimeout(async () => {
+                            const runs2 = await fetch(`${API_BASE}/admin/cron/runs?limit=5&status=running`).then(r => r.json()).then(d => d.runs || []);
+                            const recentRun2 = runs2.find(r => r.job_name === jobName);
+                            if (recentRun2) {
+                                startWatchingLogs(recentRun2.id, jobName);
+                            }
+                        }, 2000);
+                    }
+                }, 1000);
+                
+                setTimeout(() => {
+                    loadCronJobs();
+                    loadCronRuns();
+                }, 2000);
+            } catch (e) {
+                showToast('Error triggering job: ' + (e.message || e), 'error');
+            }
+        }
+
+        function startWatchingLogs(runId, jobName) {
+            watchedRunId = runId;
+            document.getElementById('running-job-name').textContent = jobName;
+            document.getElementById('running-job-logs').style.display = 'block';
+            
+            // Scroll to logs section
+            document.getElementById('running-job-logs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // Start polling for logs
+            refreshRunningJobLogs();
+            if (logWatchInterval) clearInterval(logWatchInterval);
+            logWatchInterval = setInterval(refreshRunningJobLogs, 2000); // Poll every 2 seconds
+        }
+
+        function stopWatchingLogs() {
+            if (logWatchInterval) {
+                clearInterval(logWatchInterval);
+                logWatchInterval = null;
+            }
+            watchedRunId = null;
+            document.getElementById('running-job-logs').style.display = 'none';
+        }
+
+        async function refreshRunningJobLogs() {
+            if (!watchedRunId) return;
+            
+            try {
+                const data = await apiCall(`/admin/cron/runs/${watchedRunId}/logs`);
+                const logContent = document.getElementById('running-job-log-content');
+                
+                let logText = `Status: ${data.status}\n`;
+                logText += `Started: ${new Date(data.started_at).toLocaleString()}\n`;
+                
+                if (data.is_running) {
+                    logText += `Elapsed: ${Math.floor((data.elapsed_seconds || 0) / 60)}m ${(data.elapsed_seconds || 0) % 60}s\n`;
+                    logText += `⏳ Running...\n\n`;
+                } else {
+                    logText += `Completed: ${data.completed_at ? new Date(data.completed_at).toLocaleString() : 'N/A'}\n`;
+                    logText += `Duration: ${data.duration_seconds || 0}s\n`;
+                    logText += `Items Updated: ${data.items_updated || 0}\n\n`;
+                    
+                    // Stop watching if job completed
+                    stopWatchingLogs();
+                }
+                
+                // Display logs from details.logs array if available
+                if (data.details && data.details.logs && Array.isArray(data.details.logs)) {
+                    logText += `\n📋 Live Logs:\n`;
+                    logText += `${data.details.logs.join('\n')}\n\n`;
+                } else if (data.details) {
+                    // Fallback to JSON if logs array not available
+                    logText += `\nDetails:\n${JSON.stringify(data.details, null, 2)}\n\n`;
+                }
+                
+                if (data.error_message) {
+                    logText += `\n❌ Error: ${data.error_message}\n`;
+                }
+                
+                logContent.textContent = logText;
+                
+                // Only auto-scroll if user is already at bottom (or close to it)
+                const container = logContent.parentElement;
+                const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+                if (isNearBottom) {
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+            } catch (e) {
+                document.getElementById('running-job-log-content').textContent = `Error loading logs: ${e.message || e}`;
+            }
+        }
+
+        async function toggleCronJob(jobId) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/cron/jobs/${jobId}/toggle`, { method: 'PUT' });
+                const data = await response.json();
+                showToast(data.message);
+                loadCronJobs();
+            } catch (e) {
+                showToast('Error toggling job', 'error');
+            }
+        }
+
+        async function stopCronRun(runId) {
+            const confirmed = await showCustomModal(
+                '⏹️ Stop Running Job',
+                'Stop this cron job? Any uncommitted database changes will be rolled back.',
+                'Stop Job',
+                true
+            );
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/cron/runs/${runId}/stop`, { method: 'POST' });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    // If response is not JSON, try to get text
+                    const text = await response.text();
+                    throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || data.message || `HTTP ${response.status}: Failed to stop job`);
+                }
+                
+                showToast(data.message || 'Job stopped successfully');
+                
+                // Stop watching logs if we were watching this run
+                if (watchedRunId === runId) {
+                    stopWatchingLogs();
+                }
+                
+                // Refresh runs immediately to show updated status
+                await loadCronRuns();
+                await loadCronJobs();
+            } catch (e) {
+                const errorMsg = e.message || e.toString() || 'Unknown error';
+                showToast('Error stopping job: ' + errorMsg, 'error');
+                console.error('Error stopping cron run:', e);
+                // Still refresh to see current state
+                await loadCronRuns();
+            }
+        }
+
+        async function deleteCronRun(runId) {
+            const confirmed = await showCustomModal(
+                '🗑️ Delete Cron Run',
+                'Delete this cron run record? This action cannot be undone.',
+                'Delete',
+                true
+            );
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/cron/runs/${runId}`, { method: 'DELETE' });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    // If response is not JSON, try to get text
+                    const text = await response.text();
+                    throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || data.message || `HTTP ${response.status}: Failed to delete run`);
+                }
+                
+                showToast(data.message || 'Run deleted successfully');
+                
+                // Stop watching logs if we were watching this run
+                if (watchedRunId === runId) {
+                    stopWatchingLogs();
+                }
+                
+                // Refresh runs
+                await loadCronRuns();
+            } catch (e) {
+                const errorMsg = e.message || e.toString() || 'Unknown error';
+                showToast('Error deleting run: ' + errorMsg, 'error');
+                console.error('Error deleting cron run:', e);
+                await loadCronRuns();
+            }
+        }
 
         // Initial load
         loadAllWidgets();

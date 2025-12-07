@@ -12,6 +12,7 @@ from app.cache import close_redis
 from app.api import api_router
 from app.api.admin import set_templates
 from app.config import get_settings
+from app.cron import start_scheduler, stop_scheduler
 
 settings = get_settings()
 
@@ -28,10 +29,18 @@ async def lifespan(app: FastAPI):
     await init_db()
     print("✅ Database initialized")
     
+    # Initialize cron jobs in DB
+    from app.cron.scheduler import initialize_cron_jobs
+    await initialize_cron_jobs()
+    
+    # Start cron scheduler
+    start_scheduler()
+    
     yield
     
     # Shutdown
     print("🛑 Shutting down...")
+    stop_scheduler()
     await close_redis()
     print("✅ Redis connection closed")
 

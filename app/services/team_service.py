@@ -1,4 +1,5 @@
 """Team service with cache-aside pattern."""
+import asyncio
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import select, func
@@ -110,7 +111,9 @@ class TeamService:
     @staticmethod
     async def seed_teams(db: AsyncSession) -> int:
         """Seed all NBA teams into the database."""
-        nba_teams = NBAClient.get_all_teams()
+        # Run blocking API call in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        nba_teams = await loop.run_in_executor(None, NBAClient.get_all_teams)
         count = 0
         
         for team_data in nba_teams:

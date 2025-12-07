@@ -11,10 +11,11 @@ class Settings(BaseSettings):
     use_redis: bool = False  # Set to True when Redis is available
     
     # Cache TTLs (in seconds)
-    cache_ttl_games: int = 3600
-    cache_ttl_standings: int = 1800
-    cache_ttl_player_stats: int = 3600
-    cache_ttl_player_game: int = 900
+    cache_ttl_games: int = 345600  # 96 hours (4 days) - schedules don't change often
+    cache_ttl_standings: int = 10800  # 3 hours - standings update after games
+    cache_ttl_player_stats: int = 172800  # 48 hours (2 days) - season averages change slowly
+    cache_ttl_player_game: int = 7200  # 2 hours - last game updates frequently
+    cache_ttl_last_results: int = 10800  # 3 hours - last results update after games
     
     # Current NBA Season
     current_season: str = "2025-26"

@@ -1,4 +1,5 @@
 """Standings service with cache-aside pattern."""
+import asyncio
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import select
@@ -182,9 +183,14 @@ class StandingsService:
         Refresh standings for all teams from NBA API.
         Returns number of standings updated.
         """
-        standings_data = NBAClient.get_league_standings(
-            season=season,
-            season_type=season_type,
+        # Run in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        standings_data = await loop.run_in_executor(
+            None,
+            lambda: NBAClient.get_league_standings(
+                season=season,
+                season_type=season_type,
+            )
         )
         
         # Get team ID mapping

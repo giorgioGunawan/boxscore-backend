@@ -1,4 +1,5 @@
 """Player service with hybrid data provider pattern (local-first, API-fallback)."""
+import asyncio
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import select
@@ -33,8 +34,9 @@ class PlayerService:
         if player:
             return player
         
-        # Fetch player info from NBA API
-        player_info = NBAClient.get_player_info(nba_player_id)
+        # Fetch player info from NBA API - run in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        player_info = await loop.run_in_executor(None, NBAClient.get_player_info, nba_player_id)
         
         if player_info:
             # Get team ID if available
@@ -129,7 +131,9 @@ class PlayerService:
     @staticmethod
     async def search_players(name: str) -> list[dict]:
         """Search for players by name (uses static NBA API data)."""
-        return NBAClient.search_players(name)
+        # Run in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, NBAClient.search_players, name)
     
     @staticmethod
     async def get_player_season_averages(
@@ -191,7 +195,9 @@ class PlayerService:
         # Try to fetch from NBA API
         api_success = False
         try:
-            career_data = NBAClient.get_player_career_stats(player.nba_player_id)
+            # Run in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            career_data = await loop.run_in_executor(None, NBAClient.get_player_career_stats, player.nba_player_id)
             
             # Find the matching season
             season_data = None
@@ -326,10 +332,15 @@ class PlayerService:
             
             actual_season = season
             for try_season in seasons_to_try:
-                game_log = NBAClient.get_player_game_log(
-                    player.nba_player_id,
-                    season=try_season,
-                    season_type=season_type,
+                # Run in thread pool to avoid blocking event loop
+                loop = asyncio.get_event_loop()
+                game_log = await loop.run_in_executor(
+                    None,
+                    lambda s=try_season: NBAClient.get_player_game_log(
+                        player.nba_player_id,
+                        season=s,
+                        season_type=season_type,
+                    )
                 )
                 if game_log:
                     actual_season = try_season

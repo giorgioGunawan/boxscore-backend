@@ -1,4 +1,5 @@
 """Game service with cache-aside pattern."""
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy import select, or_, and_
@@ -211,10 +212,15 @@ class GameService:
         Refresh games for a team from NBA API.
         Returns number of games added/updated.
         """
-        games_data = NBAClient.get_team_games(
-            team.nba_team_id,
-            season=season,
-            season_type=season_type,
+        # Run in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        games_data = await loop.run_in_executor(
+            None,
+            lambda: NBAClient.get_team_games(
+                team.nba_team_id,
+                season=season,
+                season_type=season_type,
+            )
         )
         
         # Get team ID mappings
@@ -256,9 +262,16 @@ class GameService:
             home_team_id = team.id if is_home else opponent_id
             away_team_id = opponent_id if is_home else team.id
             
-            # Parse game date
+            # Parse game date - NBA API returns dates in Eastern Time
             try:
-                game_date = datetime.strptime(game_data["game_date"], "%Y-%m-%d")
+                from datetime import timezone
+                import zoneinfo
+                
+                # Parse date (no time component, assume midnight Eastern)
+                eastern = zoneinfo.ZoneInfo("America/New_York")
+                game_date_et = datetime.strptime(game_data["game_date"], "%Y-%m-%d")
+                game_date_et = game_date_et.replace(tzinfo=eastern)
+                game_date = game_date_et.astimezone(timezone.utc).replace(tzinfo=None)  # Store as naive UTC
             except (ValueError, TypeError):
                 continue
             
@@ -310,7 +323,9 @@ class GameService:
         # For each incomplete game, fetch the boxscore to get both scores
         for game in incomplete_games:
             try:
-                game_data = NBAClient.get_game_by_id(game.nba_game_id)
+                # Run in thread pool to avoid blocking event loop
+                loop = asyncio.get_event_loop()
+                game_data = await loop.run_in_executor(None, NBAClient.get_game_by_id, game.nba_game_id)
                 if game_data:
                     if game_data.get("home_score") is not None:
                         game.home_score = game_data["home_score"]
@@ -337,9 +352,14 @@ class GameService:
         Refresh full season schedule for a team from NBA API.
         This includes future games, not just played games.
         """
-        schedule_data = NBAClient.get_team_schedule(
-            team.nba_team_id,
-            season=season,
+        # Run in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        schedule_data = await loop.run_in_executor(
+            None,
+            lambda: NBAClient.get_team_schedule(
+                team.nba_team_id,
+                season=season,
+            )
         )
         
         # Get team ID mappings
@@ -364,14 +384,24 @@ class GameService:
             home_team_id = team.id if is_home else opponent_id
             away_team_id = opponent_id if is_home else team.id
             
-            # Parse game date and time
+            # Parse game date and time - NBA API returns times in Eastern Time
             try:
+                from datetime import timezone
+                import zoneinfo
+                
                 game_date_str = game_data["game_date"]
                 game_time_str = game_data.get("game_time", "00:00")
+                
+                # Parse as Eastern Time
+                eastern = zoneinfo.ZoneInfo("America/New_York")
                 if game_time_str and game_time_str != "00:00":
-                    game_datetime = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                    game_datetime_et = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
                 else:
-                    game_datetime = datetime.strptime(game_date_str, "%Y-%m-%d")
+                    game_datetime_et = datetime.strptime(game_date_str, "%Y-%m-%d")
+                
+                # Make it timezone-aware (Eastern) then convert to UTC
+                game_datetime_et = game_datetime_et.replace(tzinfo=eastern)
+                game_datetime = game_datetime_et.astimezone(timezone.utc).replace(tzinfo=None)  # Store as naive UTC
             except (ValueError, TypeError):
                 continue
             
@@ -463,14 +493,27 @@ class GameService:
         home_team_id = team_id if is_home else opponent_id
         away_team_id = opponent_id if is_home else team_id
         
-        # Parse game date
+        # Parse game date - NBA API returns dates in Eastern Time  
         try:
-            game_date = datetime.strptime(game_log["game_date"], "%b %d, %Y")
-        except (ValueError, TypeError):
+            from datetime import timezone
+            import zoneinfo
+            
+            eastern = zoneinfo.ZoneInfo("America/New_York")
             try:
-                game_date = datetime.strptime(game_log["game_date"], "%Y-%m-%d")
+                game_date_et = datetime.strptime(game_log["game_date"], "%b %d, %Y")
             except (ValueError, TypeError):
-                game_date = datetime.utcnow()
+                try:
+                    game_date_et = datetime.strptime(game_log["game_date"], "%Y-%m-%d")
+                except (ValueError, TypeError):
+                    game_date_et = datetime.now(timezone.utc).replace(tzinfo=None)
+                    game_date = game_date_et
+                    raise  # Re-raise to skip timezone conversion for fallback
+            
+            # Convert Eastern to UTC
+            game_date_et = game_date_et.replace(tzinfo=eastern)
+            game_date = game_date_et.astimezone(timezone.utc).replace(tzinfo=None)  # Store as naive UTC
+        except:
+            pass  # game_date already set to fallback
         
         game = Game(
             nba_game_id=nba_game_id,
