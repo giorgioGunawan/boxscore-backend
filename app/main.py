@@ -1,4 +1,5 @@
 """FastAPI application entry point."""
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,6 +14,11 @@ from app.api import api_router
 from app.api.admin import set_templates
 from app.config import get_settings
 from app.cron import start_scheduler, stop_scheduler
+
+# Reduce SQLAlchemy logging noise
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
 
 settings = get_settings()
 

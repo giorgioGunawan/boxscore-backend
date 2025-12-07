@@ -315,6 +315,85 @@ class NBAClient:
     
     @staticmethod
     @rate_limited
+    def get_game_boxscore_with_players(game_id: str) -> Optional[dict]:
+        """
+        Get complete box score for a game including ALL player stats.
+        This is MUCH more efficient than fetching each player's game log individually.
+        
+        Returns:
+        {
+            "game_status": "Final",
+            "home_score": 120,
+            "away_score": 115,
+            "player_stats": [
+                {
+                    "nba_player_id": 201939,
+                    "player_name": "Stephen Curry",
+                    "team_id": 1610612744,
+                    "pts": 30,
+                    "reb": 5,
+                    "ast": 8,
+                    "stl": 2,
+                    "blk": 0,
+                    "minutes": "35:24",
+                    ...
+                },
+                ...
+            ]
+        }
+        """
+        try:
+            # Use BoxScoreTraditionalV2 (most reliable for player stats)
+            from nba_api.stats.endpoints import boxscoretraditionalv2
+            import warnings
+            warnings.filterwarnings('ignore')
+            
+            box = boxscoretraditionalv2.BoxScoreTraditionalV2(game_id=game_id)
+            dfs = box.get_data_frames()
+            
+            # Index 0: PlayerStats
+            # Index 1: TeamStats
+            player_stats_df = dfs[0]
+            
+            player_stats = []
+            for _, row in player_stats_df.iterrows():
+                # Only include players who actually played (have minutes)
+                # Some players might have None or empty string for minutes
+                minutes = row.get('MIN')
+                if minutes is None or str(minutes).strip() == '' or str(minutes) == '0:00':
+                    continue
+                
+                player_stats.append({
+                    "nba_player_id": int(row.get('PLAYER_ID', 0)),
+                    "player_name": row.get('PLAYER_NAME', ''),
+                    "team_id": int(row.get('TEAM_ID', 0)),
+                    "pts": int(row.get('PTS', 0) or 0),
+                    "reb": int(row.get('REB', 0) or 0),
+                    "ast": int(row.get('AST', 0) or 0),
+                    "stl": int(row.get('STL', 0) or 0),
+                    "blk": int(row.get('BLK', 0) or 0),
+                    "minutes": str(minutes),
+                })
+            
+            # Get game status from summary
+            game_info = NBAClient.get_game_by_id(game_id)
+            game_status = game_info.get('game_status', 'Unknown') if game_info else 'Unknown'
+            home_score = game_info.get('home_score') if game_info else None
+            away_score = game_info.get('away_score') if game_info else None
+            
+            return {
+                "game_status": game_status,
+                "home_score": home_score,
+                "away_score": away_score,
+                "player_stats": player_stats
+            }
+            
+        except Exception as e:
+            print(f"Error getting box score for game {game_id}: {e}")
+            return None
+    
+    @staticmethod
+    @rate_limited
     def get_player_career_stats(
         player_id: int,
         per_mode: str = "PerGame"

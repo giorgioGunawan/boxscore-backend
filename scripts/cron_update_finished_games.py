@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 async def main():
     """Run the update_finished_games job standalone."""
     # Get hours_back from environment variable or use default
-    hours_back = int(os.getenv("HOURS_BACK", "7"))
+    hours_back = int(os.getenv("HOURS_BACK", "12"))
     
     print(f"🚀 Starting update_finished_games (hours_back={hours_back})")
     print(f"⏰ Current time: {datetime.now(timezone.utc).isoformat()}")

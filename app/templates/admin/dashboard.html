@@ -1106,6 +1106,28 @@
                 </div>
             </div>
 
+            <!-- Games/Boxscore API -->
+            <div class="api-tester">
+                <h3><span class="method">GET</span> Games & Boxscore API</h3>
+                <div class="input-group">
+                    <input type="text" id="games-game-id" placeholder="Game ID (e.g. 0022500351)" style="width:220px;">
+                    <button class="action-btn small" onclick="testGamesAPI()">
+                        <span class="icon">▶️</span> Run
+                    </button>
+                </div>
+                <div class="api-path">
+                    <span class="method-badge">GET</span>
+                    <span class="path" id="games-api-path">/api/games/{game_id}/boxscore</span>
+                    <button class="copy-btn" onclick="copyPath('games-api-path')">📋 Copy</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    💡 Returns complete box score with all player stats for a game. Game IDs follow format: 002SSGG### (SS=season, GG=game type)
+                </p>
+                <div class="result-container" id="games-result">
+                    <pre></pre>
+                </div>
+            </div>
+
             <!-- Common NBA Player IDs Reference -->
             <div class="api-tester">
                 <h3><span class="method">REF</span> Common NBA Player IDs</h3>
@@ -2122,6 +2144,26 @@
                 showResult('players-result', data);
             } catch (e) {
                 showResult('players-result', e, true);
+            }
+        }
+
+        async function testGamesAPI() {
+            const gameId = document.getElementById('games-game-id').value;
+            
+            showLoading('games-result');
+            
+            try {
+                if (!gameId || gameId.length < 10) {
+                    throw { detail: 'Please enter a valid Game ID (e.g. 0022500351)' };
+                }
+                
+                const url = `/games/${gameId}/boxscore`;
+                document.getElementById('games-api-path').textContent = `/api${url}`;
+                
+                const data = await apiCall(url);
+                showResult('games-result', data);
+            } catch (e) {
+                showResult('games-result', e, true);
             }
         }
 

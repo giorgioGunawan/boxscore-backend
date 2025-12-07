@@ -23,7 +23,7 @@ Go to your Render Dashboard → Your Web Service → Add New → **Cron Job**
 **Environment:** Copy all environment variables from your web service  
 
 **Optional Environment Variables:**
-- `HOURS_BACK=7` (default: look back 7 hours for finished games)
+- `HOURS_BACK=12` (default: look back 12 hours for finished games)
 
 ---
 
@@ -88,7 +88,7 @@ services:
       - key: CURRENT_SEASON
         value: "2025-26"
       - key: HOURS_BACK
-        value: "7"
+        value: "12"
 
   # Cron Job 2: Update Player Season Stats
   - type: cron

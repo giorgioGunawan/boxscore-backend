@@ -303,7 +303,7 @@ async def initialize_cron_jobs():
         jobs = [
             {
                 "name": "update_finished_games",
-                "description": "Every 2 hours: Update game results, team standings, and player last game stats for games that started in last 7 hours",
+                "description": "Every 2 hours: Update game results, team standings, and player last game stats for games that started in last 12 hours",
                 "schedule": "every 2 hours",
                 "cron_expression": None,
             },
@@ -405,7 +405,14 @@ async def cleanup_stuck_jobs():
             run.completed_at = datetime.now(timezone.utc)
             run.error_message = "Job marked as failed - was stuck in running state for over 1 hour"
             if run.started_at:
-                run.duration_seconds = int((run.completed_at - run.started_at).total_seconds())
+                # Handle timezone-naive datetime from SQLite
+                started_at = run.started_at
+                if started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=timezone.utc)
+                completed_at = run.completed_at
+                if completed_at.tzinfo is None:
+                    completed_at = completed_at.replace(tzinfo=timezone.utc)
+                run.duration_seconds = int((completed_at - started_at).total_seconds())
             
             # Cancel token if exists
             cancel_run(run.id, reason="Stuck job cleaned up")

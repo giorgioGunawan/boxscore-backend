@@ -1,8 +1,9 @@
 """Cron job service for scheduled data updates."""
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,21 +19,27 @@ from app.database import AsyncSessionLocal
 settings = get_settings()
 
 
-async def update_run_progress(run_id: int, details: Dict[str, Any]):
+async def update_run_progress(run_id: int, details: Dict[str, Any], db_session: Optional[AsyncSession] = None):
     """Update CronRun details during execution for real-time progress tracking."""
     try:
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(select(CronRun).where(CronRun.id == run_id))
+        if db_session:
+            # Use the existing session (no lock issues!)
+            result = await db_session.execute(select(CronRun).where(CronRun.id == run_id))
             run = result.scalar_one_or_none()
             if run:
-                run.details = details
-                await db.flush()  # Flush immediately
-                await db.commit()
-                print(f"[update_run_progress] Updated progress for run {run_id}, logs count: {len(details.get('logs', []))}")
+                run.details = details.copy()
+                await db_session.flush()  # Flush but don't commit (let main transaction handle it)
+        else:
+            # Fallback: Use a separate session (may lock, but better than nothing)
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(CronRun).where(CronRun.id == run_id))
+                run = result.scalar_one_or_none()
+                if run:
+                    run.details = details.copy()
+                    await db.commit()
     except Exception as e:
-        print(f"[update_run_progress] Failed to update progress for run {run_id}: {e}")
-        import traceback
-        traceback.print_exc()
+        # Silently fail - logs are still in memory and will be saved at the end
+        pass
 
 
 class CronService:
@@ -42,7 +49,7 @@ class CronService:
     async def update_finished_games(
         run_id: int,
         cancellation_token: Optional[Any] = None,
-        hours_back: int = 7
+        hours_back: int = 12
     ) -> Dict[str, Any]:
         """
         Check for games finished in the last X hours and update:
@@ -50,8 +57,6 @@ class CronService:
         - Team standings for both teams
         - Player last game stats
         """
-        print(f"[update_finished_games] Function called with run_id: {run_id}")
-        
         start_time = datetime.now(timezone.utc)
         details = {
             "games_updated": 0,
@@ -61,19 +66,16 @@ class CronService:
             "logs": []  # Add logs array for Live logs
         }
         
-        print(f"[update_finished_games] Creating database session...")
-        
         # Create our own database session
         async with AsyncSessionLocal() as db:
             try:
-                print(f"[update_finished_games] Database session created, starting job logic...")
-                
                 # Check for cancellation before starting
                 if cancellation_token:
                     cancellation_token.check()
                 
                 details["logs"].append(f"🔍 Starting update_finished_games job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
-                print(f"[update_finished_games] Added first log entry")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 # Find games that started in the past and might have finished
                 # NOTE: Database stores naive datetimes (no timezone), but they represent UTC
@@ -88,7 +90,8 @@ class CronService:
                 details["logs"].append(f"📅 Looking for games that started in the last {hours_back} hours (between {time_window_ago.strftime('%Y-%m-%d %H:%M:%S')} and {now.strftime('%Y-%m-%d %H:%M:%S')} UTC)")
                 
                 # Update progress immediately so logs appear
-                await update_run_progress(run_id, details)
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 # First, let's see how many games we have in total and in the past
                 total_games_result = await db.execute(select(func.count(Game.id)))
@@ -139,7 +142,8 @@ class CronService:
                     details["logs"].append(f"⚠️ No games in the past found! All {total_games} games are scheduled for the future.")
                     details["logs"].append(f"ℹ️ Current season is {settings.current_season}. Make sure games have been seeded for the current date.")
                 
-                await update_run_progress(run_id, details)
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 # Get all games that started in the specified time window (regardless of status)
                 result = await db.execute(
@@ -153,7 +157,8 @@ class CronService:
                 details["logs"].append(f"📊 Found {len(recent_games)} games that started in the last {hours_back} hours (within our search window)")
                 
                 # Update progress
-                await update_run_progress(run_id, details)
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 # Early exit if no games found
                 if not recent_games:
@@ -161,7 +166,8 @@ class CronService:
                     duration = (datetime.now(timezone.utc) - start_time).total_seconds()
                     details["duration_seconds"] = duration
                     details["logs"].append(f"   Duration: {duration:.2f} seconds")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     return {
                         "status": "success",
                         "items_updated": 0,
@@ -197,7 +203,8 @@ class CronService:
                     duration = (datetime.now(timezone.utc) - start_time).total_seconds()
                     details["duration_seconds"] = duration
                     details["logs"].append(f"   Duration: {duration:.2f} seconds")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     return {
                         "status": "success",
                         "items_updated": 0,
@@ -223,7 +230,8 @@ class CronService:
                 
                 if games_needing_update:
                     details["logs"].append(f"📡 Fetching {len(games_needing_update)} boxscores in parallel...")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     
                     # Check for cancellation
                     if cancellation_token:
@@ -238,7 +246,8 @@ class CronService:
                     boxscores = await asyncio.gather(*fetch_tasks, return_exceptions=True)
                     
                     details["logs"].append(f"✓ Retrieved {len(boxscores)} boxscores, processing results...")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     
                     # Process each game with its boxscore
                     for game_idx, (game, boxscore) in enumerate(zip(games_needing_update, boxscores), 1):
@@ -284,21 +293,50 @@ class CronService:
                 else:
                     details["logs"].append("✓ All games already have final scores, no updates needed")
                 
-                # Note: We only update standings and player stats for games that were JUST marked as final
-                # Games that were already final in our DB are skipped (no double updates)
+                # Add games that are already final but might need player stats
+                # (NBA API sometimes doesn't have player stats immediately after game ends)
+                details["logs"].append("")
+                details["logs"].append(f"🔍 Checking for final games without player stats...")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                games_needing_player_stats = 0
+                for game in games_to_check:
+                    if game.status == "final" and game not in final_games:
+                        # Check if this game has player stats
+                        result = await db.execute(
+                            select(func.count(PlayerGameStats.id)).where(
+                                PlayerGameStats.game_id == game.id
+                            )
+                        )
+                        player_stats_count = result.scalar_one()
+                        
+                        if player_stats_count == 0:
+                            # Game is final but has no player stats, try fetching them
+                            final_games.append(game)
+                            games_needing_player_stats += 1
+                            details["logs"].append(f"   🔄 {game.away_team.abbreviation if game.away_team else '???'} @ {game.home_team.abbreviation if game.home_team else '???'}: Already final but missing player stats, will retry")
+                
+                if games_needing_player_stats == 0:
+                    details["logs"].append("   ✓ All final games already have player stats")
+                
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 # Commit game updates (will rollback if cancelled)
                 if details["games_updated"] > 0:
                     try:
                         await db.commit()
                         details["logs"].append(f"💾 Committed {details['games_updated']} game updates to database")
-                        await update_run_progress(run_id, details)
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                     except asyncio.CancelledError:
                         await db.rollback()
                         raise
                 else:
                     details["logs"].append("ℹ️ No game updates to commit")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 
                 # Update standings for affected teams
                 if teams_to_update:
@@ -306,7 +344,8 @@ class CronService:
                     details["logs"].append(f"📈 Updating standings for {len(teams_to_update)} teams:")
                     # Fetch standings once for all teams
                     details["logs"].append("   📡 Fetching league standings from NBA API...")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     # Run blocking API call in thread pool to avoid blocking event loop
                     loop = asyncio.get_event_loop()
                     standings_data = await loop.run_in_executor(
@@ -386,27 +425,29 @@ class CronService:
                     try:
                         await db.commit()
                         details["logs"].append(f"💾 Committed standings updates for {len(details['standings_updated'])} teams")
-                        await update_run_progress(run_id, details)
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                     except asyncio.CancelledError:
                         await db.rollback()
                         raise
                 else:
                     details["logs"].append("ℹ️ No standings updates to commit")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 
                 # Update player game stats ONLY for final games (not live games)
                 if final_games:
                     details["logs"].append("")
                     details["logs"].append(f"👤 Updating player game stats for players in {len(final_games)} FINAL games:")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 elif games_to_check and not final_games:
                     details["logs"].append("")
                     details["logs"].append("ℹ️ No final games to update player stats for (all games are still in progress)")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 
                 total_players_processed = 0
-                players_with_stats = 0
-                players_no_stats = 0
                 
                 for game_idx, game in enumerate(final_games, 1):
                     # Check for cancellation
@@ -428,136 +469,151 @@ class CronService:
                         )
                         players = result.scalars().all()
                         
-                        details["logs"].append(f"   [{game_idx}/{len(final_games)}] 🏀 {away_abbr} @ {home_abbr}: Fetching stats for {len(players)} players in parallel...")
-                        await update_run_progress(run_id, details)
+                        if not players:
+                            details["logs"].append(f"   [{game_idx}/{len(final_games)}] ⚠️ {away_abbr} @ {home_abbr}: No players found in database for these teams")
+                            continue
                         
-                        # Check for cancellation
-                        if cancellation_token:
-                            cancellation_token.check()
+                        details["logs"].append(f"   [{game_idx}/{len(final_games)}] 🏀 {away_abbr} @ {home_abbr}: Processing {len(players)} players...")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                         
-                        # Fetch all player game logs in parallel
+                        # Process each player synchronously (one at a time for better logging)
+                        players_updated = 0
+                        players_created = 0
+                        players_skipped = 0
+                        
                         loop = asyncio.get_event_loop()
-                        player_fetch_tasks = [
-                            loop.run_in_executor(
-                                None,
-                                lambda p=player: NBAClient.get_player_game_log(
-                                    p.nba_player_id,
-                                    season=settings.current_season,
-                                    season_type="Regular Season"
-                                )
-                            )
-                            for player in players
-                        ]
-                        game_logs = await asyncio.gather(*player_fetch_tasks, return_exceptions=True)
                         
-                        # Process each player with their game log
-                        for player_idx, (player, game_log) in enumerate(zip(players, game_logs), 1):
+                        for player_idx, player in enumerate(players, 1):
+                            # Check for cancellation
+                            if cancellation_token:
+                                cancellation_token.check()
+                            
                             try:
-                                if isinstance(game_log, Exception):
-                                    error_msg = f"Error fetching game log: {str(game_log)}"
-                                    details["errors"].append(error_msg)
-                                    details["logs"].append(f"      [{player_idx}/{len(players)}] ❌ {player.full_name}: {error_msg}")
+                                # Fetch this player's game log
+                                game_log = await loop.run_in_executor(
+                                    None,
+                                    lambda: NBAClient.get_player_game_log(
+                                        player.nba_player_id,
+                                        season=settings.current_season,
+                                        season_type="Regular Season"
+                                    )
+                                )
+                                
+                                if not game_log or len(game_log) == 0:
+                                    log_msg = f"      [{player_idx}/{len(players)}] ⚠️ {player.full_name}: No game log found"
+                                    details["logs"].append(log_msg)
+                                    print(log_msg)  # Also print to console
+                                    players_skipped += 1
                                     continue
                                 
-                                if game_log and len(game_log) > 0:
-                                    latest_game = game_log[0]
-                                    
-                                    # Check if this is the game we're processing
-                                    if latest_game.get("nba_game_id") == game.nba_game_id:
-                                        # Check if stats exist
-                                        result = await db.execute(
-                                            select(PlayerGameStats).where(
-                                                PlayerGameStats.player_id == player.id,
-                                                PlayerGameStats.game_id == game.id,
-                                            )
-                                        )
-                                        existing = result.scalar_one_or_none()
-                                        
-                                        pts = latest_game.get("pts", 0)
-                                        reb = latest_game.get("reb", 0)
-                                        ast = latest_game.get("ast", 0)
-                                        
-                                        # Only update if stats don't exist OR game was just marked final
-                                        # (to avoid re-fetching stats for games that are already complete)
-                                        if existing and existing.last_api_sync and existing.last_api_sync > game.start_time_utc:
-                                            # Stats already exist and were synced after game started, skip
-                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✓ {player.full_name}: Stats already synced")
-                                            players_no_stats += 1
-                                            total_players_processed += 1
-                                            continue
-                                        
-                                        if existing:
-                                            existing.pts = pts
-                                            existing.reb = reb
-                                            existing.ast = ast
-                                            existing.stl = latest_game.get("stl", 0)
-                                            existing.blk = latest_game.get("blk", 0)
-                                            existing.minutes = latest_game.get("minutes")
-                                            existing.last_api_sync = datetime.now(timezone.utc)
-                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✅ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST (updated)")
-                                        else:
-                                            stats = PlayerGameStats(
-                                                player_id=player.id,
-                                                game_id=game.id,
-                                                pts=pts,
-                                                reb=reb,
-                                                ast=ast,
-                                                stl=latest_game.get("stl", 0),
-                                                blk=latest_game.get("blk", 0),
-                                                minutes=latest_game.get("minutes"),
-                                                source="api",
-                                                last_api_sync=datetime.now(timezone.utc),
-                                            )
-                                            db.add(stats)
-                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✅ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST")
-                                        
-                                        details["player_stats_updated"] += 1
-                                        players_with_stats += 1
-                                    else:
-                                        # Player's latest game is not this game
-                                        players_no_stats += 1
-                                        if player_idx <= 3:  # Only log first few to avoid spam
-                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ℹ️ {player.full_name}: Latest game is not this game (skipped)")
-                                else:
-                                    players_no_stats += 1
-                                    if player_idx <= 3:  # Only log first few to avoid spam
-                                        details["logs"].append(f"      [{player_idx}/{len(players)}] ℹ️ {player.full_name}: No game log found")
+                                # Find the matching game in the player's log
+                                matching_game = None
+                                for log_entry in game_log:
+                                    if log_entry.get("nba_game_id") == game.nba_game_id:
+                                        matching_game = log_entry
+                                        break
                                 
+                                if not matching_game:
+                                    log_msg = f"      [{player_idx}/{len(players)}] ℹ️ {player.full_name}: Didn't play in this game"
+                                    details["logs"].append(log_msg)
+                                    print(log_msg)  # Also print to console
+                                    players_skipped += 1
+                                    continue
+                                
+                                # Check if stats already exist
+                                result = await db.execute(
+                                    select(PlayerGameStats).where(
+                                        PlayerGameStats.player_id == player.id,
+                                        PlayerGameStats.game_id == game.id,
+                                    )
+                                )
+                                existing = result.scalar_one_or_none()
+                                
+                                pts = matching_game.get("pts", 0)
+                                reb = matching_game.get("reb", 0)
+                                ast = matching_game.get("ast", 0)
+                                stl = matching_game.get("stl", 0)
+                                blk = matching_game.get("blk", 0)
+                                minutes = matching_game.get("minutes", "0")
+                                
+                                if existing:
+                                    # Update existing stats
+                                    existing.pts = pts
+                                    existing.reb = reb
+                                    existing.ast = ast
+                                    existing.stl = stl
+                                    existing.blk = blk
+                                    existing.minutes = minutes
+                                    existing.last_api_sync = datetime.now(timezone.utc)
+                                    players_updated += 1
+                                    log_msg = f"      [{player_idx}/{len(players)}] ✏️ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST, {minutes} MIN (updated)"
+                                else:
+                                    # Create new stats
+                                    stats = PlayerGameStats(
+                                        player_id=player.id,
+                                        game_id=game.id,
+                                        pts=pts,
+                                        reb=reb,
+                                        ast=ast,
+                                        stl=stl,
+                                        blk=blk,
+                                        minutes=minutes,
+                                        source="api",
+                                        last_api_sync=datetime.now(timezone.utc),
+                                    )
+                                    db.add(stats)
+                                    players_created += 1
+                                    log_msg = f"      [{player_idx}/{len(players)}] ✅ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST, {minutes} MIN (created)"
+                                
+                                details["logs"].append(log_msg)
+                                print(log_msg)  # Also print to console
+                                
+                                details["player_stats_updated"] += 1
                                 total_players_processed += 1
                                 
+                                # Update progress every 2 players for better visibility
+                                if player_idx % 2 == 0 or player_idx == len(players):
+                                    # Use the same db session to avoid SQLite locks
+                                    await update_run_progress(run_id, details, db_session=db)
+                                    await db.commit()  # Commit immediately so frontend can see updates
+                                
                             except Exception as e:
-                                error_msg = f"Error processing player {player.id} stats: {str(e)}"
+                                error_msg = f"Error processing player {player.full_name}: {str(e)}"
                                 details["errors"].append(error_msg)
-                                details["logs"].append(f"      [{player_idx}/{len(players)}] ❌ {player.full_name}: {error_msg}")
+                                log_msg = f"      [{player_idx}/{len(players)}] ❌ {player.full_name}: {str(e)}"
+                                details["logs"].append(log_msg)
+                                print(log_msg)  # Also print to console
                                 continue
                         
-                        # Update progress after each game's players are processed
-                        await update_run_progress(run_id, details)
-                        
-                        if len(players) > 3:
-                            details["logs"].append(f"      ... ({len(players) - 3} more players processed)")
+                        # Log summary for this game and ensure final update
+                        details["logs"].append(f"      ✅ Summary: Updated {players_updated}, created {players_created}, skipped {players_skipped} players")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()  # Commit so frontend can see the summary
                         
                     except Exception as e:
                         error_msg = f"Error processing game {game.id} players: {str(e)}"
                         details["errors"].append(error_msg)
-                        details["logs"].append(f"   [{game_idx}/{len(games_to_check)}] ❌ {error_msg}")
+                        details["logs"].append(f"   [{game_idx}/{len(final_games)}] ❌ {error_msg}")
                 
-                if games_to_check:
+                if final_games:
                     details["logs"].append("")
-                    details["logs"].append(f"   📊 Player stats summary: {players_with_stats} players updated, {players_no_stats} players skipped (no stats for this game)")
+                    details["logs"].append(f"   📊 Player stats summary: Total {total_players_processed} player stats processed across {len(final_games)} games")
                 
                 # Final commit (will rollback if cancelled)
                 if details["player_stats_updated"] > 0:
                     try:
                         await db.commit()
                         details["logs"].append(f"💾 Committed {details['player_stats_updated']} player game stats updates")
-                        await update_run_progress(run_id, details)
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                     except asyncio.CancelledError:
                         await db.rollback()
                         raise
                 else:
                     details["logs"].append("ℹ️ No player stats updates to commit")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 
                 duration = (datetime.now(timezone.utc) - start_time).total_seconds()
                 details["duration_seconds"] = duration
@@ -575,8 +631,6 @@ class CronService:
                 if details["errors"]:
                     details["logs"].append(f"   Errors: {len(details['errors'])}")
                 
-                print(f"[update_finished_games] Job completed successfully, returning results...")
-                
                 return {
                     "status": "success",
                     "items_updated": total_items,
@@ -584,11 +638,9 @@ class CronService:
                 }
                 
             except asyncio.CancelledError as e:
-                print(f"[update_finished_games] Job was cancelled: {e}")
                 # Context manager will auto-rollback on exception
                 raise  # Re-raise to be caught by scheduler
             except Exception as e:
-                print(f"[update_finished_games] Job failed with exception: {e}")
                 import traceback
                 traceback.print_exc()
                 # Context manager will auto-rollback on exception
@@ -646,7 +698,8 @@ class CronService:
                     duration = (datetime.now(timezone.utc) - start_time).total_seconds()
                     details["duration_seconds"] = duration
                     details["logs"].append(f"   Duration: {duration:.2f} seconds")
-                    await update_run_progress(run_id, details)
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                     return {
                         "status": "success",
                         "items_updated": 0,
