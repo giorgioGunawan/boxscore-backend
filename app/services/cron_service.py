@@ -284,15 +284,8 @@ class CronService:
                 else:
                     details["logs"].append("✓ All games already have final scores, no updates needed")
                 
-                # Also add teams from games that didn't need updates (already final in DB)
-                # For player stats, we'll check if they need updating individually
-                for game in games_to_check:
-                    if game not in games_needing_update and game.status == "final":
-                        # Game is already final, add it to final_games for potential player stats update
-                        final_games.append(game)
-                    if game not in games_needing_update:
-                        teams_to_update.add(game.home_team_id)
-                        teams_to_update.add(game.away_team_id)
+                # Note: We only update standings and player stats for games that were JUST marked as final
+                # Games that were already final in our DB are skipped (no double updates)
                 
                 # Commit game updates (will rollback if cancelled)
                 if details["games_updated"] > 0:
