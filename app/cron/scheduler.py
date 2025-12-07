@@ -73,13 +73,19 @@ async def run_job_now(job_name: str, job_func, *args, **kwargs):
                     run2.duration_seconds = None
                 run2.status = result_data.get("status", "success")
                 run2.items_updated = result_data.get("items_updated", 0)
-                run2.details = result_data.get("details", {})
+                # Use details from job function return (should have all logs)
+                job_details = result_data.get("details", {})
+                if job_details:
+                    run2.details = job_details
+                # If no details in return but we have existing details, keep them
+                elif run2.details:
+                    pass  # Keep existing details
                 
                 if run2.status == "failed":
                     run2.error_message = result_data.get("error", "Unknown error")
                 
                 await db2.commit()
-                print(f"[run_job_now] Updated run record {run_id} - status: {run2.status}, items: {run2.items_updated}")
+                print(f"[run_job_now] Updated run record {run_id} - status: {run2.status}, items: {run2.items_updated}, logs: {len(job_details.get('logs', [])) if job_details else 0}")
     
     except asyncio.TimeoutError:
         print(f"[run_job_now] Job {job_name} timed out after {timeout_seconds} seconds")

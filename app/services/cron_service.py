@@ -674,135 +674,251 @@ class CronService:
                 details["logs"] = []  # Initialize logs array
                 details["logs"].append(f"🔍 Starting update_player_season_averages_batch job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
                 details["logs"].append(f"📦 Batch size: {batch_size}")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
-                # Get players that need updating (haven't been updated in 3 days)
-                three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
-                details["logs"].append(f"📅 Looking for players not updated since {three_days_ago.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                # Get players that need updating
+                three_hours_ago = datetime.now(timezone.utc) - timedelta(hours=3)  # TEMP: Changed from 3 days to 3 hours for testing
+                # Convert to naive datetime for SQLite comparison (SQLite stores naive datetimes)
+                three_hours_ago_naive = three_hours_ago.replace(tzinfo=None)
                 
-                result = await db.execute(
-                    select(PlayerSeasonStats).where(
-                        or_(
-                            PlayerSeasonStats.last_api_sync < three_days_ago,
-                            PlayerSeasonStats.last_api_sync.is_(None)
-                        ),
-                        PlayerSeasonStats.season == settings.current_season,
-                        PlayerSeasonStats.is_manual_override == False
-                    ).limit(batch_size)
-                )
-                stats_to_update = result.scalars().all()
+                details["logs"].append(f"📅 Looking for players not updated since {three_hours_ago.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                details["logs"].append(f"   Logic: Players with no stats OR stats older than 3 hours (and not manually overridden)")
                 
-                details["logs"].append(f"📊 Found {len(stats_to_update)} players needing updates")
+                # Get total player count
+                total_players_result = await db.execute(select(func.count(Player.id)))
+                total_players = total_players_result.scalar_one()
+                details["logs"].append(f"📊 Found {total_players} total players in database")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
-                if not stats_to_update:
-                    details["logs"].append("✅ No players need updating. All players are up to date.")
-                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-                    details["duration_seconds"] = duration
-                    details["logs"].append(f"   Duration: {duration:.2f} seconds")
-                    await update_run_progress(run_id, details, db_session=db)
-                    await db.commit()
-                    return {
-                        "status": "success",
-                        "items_updated": 0,
-                        "details": details
-                    }
+                # Process batches until no more players need updating
+                batch_number = 0
+                total_processed = 0
+                processed_player_ids = set()  # Track players we've already processed in this run
                 
-                details["logs"].append("")
-                details["logs"].append(f"👤 Processing {len(stats_to_update)} players:")
-                
-                for idx, stats in enumerate(stats_to_update, 1):
-                    # Check for cancellation
+                while True:
+                    batch_number += 1
+                    
+                    # Check for cancellation before each batch
                     if cancellation_token:
                         cancellation_token.check()
                     
-                    try:
-                        result = await db.execute(
-                            select(Player).where(Player.id == stats.player_id)
+                    # Strategy: Get players that need updating using SQL joins
+                    # 1. Players with no stats record for current season (excluding already processed)
+                    # 2. Players with stats that are outdated (last_api_sync < 3 hours ago OR NULL) and not manual override
+                    
+                    # First, get players WITHOUT stats records (excluding already processed)
+                    query_no_stats = select(Player).outerjoin(
+                        PlayerSeasonStats,
+                        and_(
+                            PlayerSeasonStats.player_id == Player.id,
+                            PlayerSeasonStats.season == settings.current_season,
+                            PlayerSeasonStats.season_type == "Regular Season"
                         )
-                        player = result.scalar_one_or_none()
-                        if not player:
-                            details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ⚠️ Player ID {stats.player_id} not found, skipping")
-                            details["players_skipped"] += 1
+                    ).where(PlayerSeasonStats.id.is_(None))
+                    
+                    # Exclude already processed players
+                    if processed_player_ids:
+                        query_no_stats = query_no_stats.where(~Player.id.in_(processed_player_ids))
+                    
+                    players_without_stats = await db.execute(
+                        query_no_stats.limit(batch_size)
+                    )
+                    players_no_stats = [(p, None) for p in players_without_stats.scalars().all()]
+                    
+                    # Then, get players WITH stats that need updating (excluding already processed)
+                    remaining_batch_size = batch_size - len(players_no_stats)
+                    if remaining_batch_size > 0:
+                        query_with_stats = select(PlayerSeasonStats, Player).join(
+                            Player, PlayerSeasonStats.player_id == Player.id
+                        ).where(
+                            PlayerSeasonStats.season == settings.current_season,
+                            PlayerSeasonStats.season_type == "Regular Season",
+                            PlayerSeasonStats.is_manual_override == False,
+                            or_(
+                                PlayerSeasonStats.last_api_sync.is_(None),
+                                PlayerSeasonStats.last_api_sync < three_hours_ago_naive
+                            )
+                        )
+                        
+                        # Exclude already processed players
+                        if processed_player_ids:
+                            query_with_stats = query_with_stats.where(~Player.id.in_(processed_player_ids))
+                        
+                        stats_to_update_result = await db.execute(
+                            query_with_stats.limit(remaining_batch_size)
+                        )
+                        players_with_stats = [(row[1], row[0]) for row in stats_to_update_result.all()]
+                    else:
+                        players_with_stats = []
+                    
+                    players_to_update = players_no_stats + players_with_stats
+                    
+                    if not players_to_update:
+                        if batch_number == 1:
+                            details["logs"].append("✅ No players need updating. All players are up to date.")
+                        else:
+                            details["logs"].append("")
+                            details["logs"].append(f"✅ Finished processing all batches. No more players need updating.")
+                        break
+                    
+                    details["logs"].append("")
+                    details["logs"].append(f"📦 BATCH {batch_number}: Found {len(players_to_update)} players needing updates:")
+                    details["logs"].append(f"   - {len(players_no_stats)} players with no stats record")
+                    details["logs"].append(f"   - {len(players_with_stats)} players with outdated stats")
+                    details["logs"].append(f"")
+                    details["logs"].append(f"👤 Processing batch {batch_number} ({len(players_to_update)} players):")
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
+                    
+                    batch_updated = 0
+                    batch_skipped = 0
+                    
+                    for idx, (player, stats) in enumerate(players_to_update, 1):
+                        # Check for cancellation
+                        if cancellation_token:
+                            cancellation_token.check()
+                        
+                        try:
+                            last_sync = stats.last_api_sync.strftime('%Y-%m-%d %H:%M') if stats and stats.last_api_sync else "Never"
+                            details["logs"].append(f"   [{idx}/{len(players_to_update)}] 📡 Fetching stats for {player.full_name} (Last sync: {last_sync})...")
+                            await update_run_progress(run_id, details, db_session=db)
+                            await db.commit()
+                            
+                            # Run blocking API call in thread pool to avoid blocking event loop
+                            loop = asyncio.get_event_loop()
+                            career_data = await loop.run_in_executor(None, NBAClient.get_player_career_stats, player.nba_player_id)
+                            season_data = next(
+                                (s for s in career_data.get("seasons", []) if s["season"] == settings.current_season),
+                                None
+                            )
+                            
+                            if season_data:
+                                # Get or create stats record
+                                if not stats:
+                                    stats = PlayerSeasonStats(
+                                        player_id=player.id,
+                                        season=settings.current_season,
+                                        season_type="Regular Season",
+                                        pts=season_data["pts"],
+                                        reb=season_data["reb"],
+                                        ast=season_data["ast"],
+                                        stl=season_data["stl"],
+                                        blk=season_data["blk"],
+                                        games_played=season_data["games_played"],
+                                        minutes=season_data["minutes"],
+                                        fg_pct=season_data.get("fg_pct"),
+                                        fg3_pct=season_data.get("fg3_pct"),
+                                        ft_pct=season_data.get("ft_pct"),
+                                        last_api_sync=datetime.now(timezone.utc),
+                                        source="api"
+                                    )
+                                    db.add(stats)
+                                    details["players_updated"] += 1
+                                    batch_updated += 1
+                                    details["logs"].append(f"   [{idx}/{len(players_to_update)}] ✅ Created stats for {player.full_name}: {stats.pts} PTS, {stats.reb} REB, {stats.ast} AST")
+                                else:
+                                    old_pts = stats.pts
+                                    old_reb = stats.reb
+                                    old_ast = stats.ast
+                                    
+                                    stats.pts = season_data["pts"]
+                                    stats.reb = season_data["reb"]
+                                    stats.ast = season_data["ast"]
+                                    stats.stl = season_data["stl"]
+                                    stats.blk = season_data["blk"]
+                                    stats.games_played = season_data["games_played"]
+                                    stats.minutes = season_data["minutes"]
+                                    stats.fg_pct = season_data.get("fg_pct")
+                                    stats.fg3_pct = season_data.get("fg3_pct")
+                                    stats.ft_pct = season_data.get("ft_pct")
+                                    stats.last_api_sync = datetime.now(timezone.utc)
+                                    details["players_updated"] += 1
+                                    batch_updated += 1
+                                    
+                                    changes = []
+                                    if old_pts != stats.pts:
+                                        changes.append(f"PTS: {old_pts} → {stats.pts}")
+                                    if old_reb != stats.reb:
+                                        changes.append(f"REB: {old_reb} → {stats.reb}")
+                                    if old_ast != stats.ast:
+                                        changes.append(f"AST: {old_ast} → {stats.ast}")
+                                    
+                                    if changes:
+                                        details["logs"].append(f"   [{idx}/{len(players_to_update)}] ✅ Updated {player.full_name}: {', '.join(changes)}")
+                                    else:
+                                        details["logs"].append(f"   [{idx}/{len(players_to_update)}] ✓ {player.full_name}: Stats unchanged ({stats.pts} PTS, {stats.reb} REB, {stats.ast} AST)")
+                            else:
+                                details["logs"].append(f"   [{idx}/{len(players_to_update)}] ⚠️ {player.full_name}: No season data found for {settings.current_season}")
+                                details["players_skipped"] += 1
+                                batch_skipped += 1
+                                # Note: We don't create a stats record for players with no season data
+                                # They'll be tried again in future cron runs, but not in this run
+                            
+                            # Mark player as processed so we don't pick them up again in this run
+                            processed_player_ids.add(player.id)
+                            
+                            # Update progress after each player so frontend can see logs
+                            await update_run_progress(run_id, details, db_session=db)
+                            await db.commit()
+                            
+                            # Rate limiting
+                            await asyncio.sleep(0.6)
+                            
+                        except Exception as e:
+                            error_msg = f"Error updating player {player.full_name} (ID: {player.id}): {str(e)}"
+                            details["errors"].append(error_msg)
+                            details["logs"].append(f"   [{idx}/{len(players_to_update)}] ❌ {error_msg}")
+                            
+                            # Mark player as processed even on error so we don't keep retrying in this run
+                            processed_player_ids.add(player.id)
+                            
+                            await update_run_progress(run_id, details, db_session=db)
+                            await db.commit()
                             continue
                         
-                        last_sync = stats.last_api_sync.strftime('%Y-%m-%d %H:%M') if stats.last_api_sync else "Never"
-                        details["logs"].append(f"   [{idx}/{len(stats_to_update)}] 📡 Fetching stats for {player.full_name} (Last sync: {last_sync})...")
-                        
-                        # Run blocking API call in thread pool to avoid blocking event loop
-                        loop = asyncio.get_event_loop()
-                        career_data = await loop.run_in_executor(None, NBAClient.get_player_career_stats, player.nba_player_id)
-                        season_data = next(
-                            (s for s in career_data.get("seasons", []) if s["season"] == settings.current_season),
-                            None
-                        )
-                        
-                        if season_data:
-                            old_pts = stats.pts
-                            old_reb = stats.reb
-                            old_ast = stats.ast
-                            
-                            stats.pts = season_data["pts"]
-                            stats.reb = season_data["reb"]
-                            stats.ast = season_data["ast"]
-                            stats.stl = season_data["stl"]
-                            stats.blk = season_data["blk"]
-                            stats.games_played = season_data["games_played"]
-                            stats.minutes = season_data["minutes"]
-                            stats.fg_pct = season_data.get("fg_pct")
-                            stats.fg3_pct = season_data.get("fg3_pct")
-                            stats.ft_pct = season_data.get("ft_pct")
-                            stats.last_api_sync = datetime.now(timezone.utc)
-                            details["players_updated"] += 1
-                            
-                            changes = []
-                            if old_pts != stats.pts:
-                                changes.append(f"PTS: {old_pts} → {stats.pts}")
-                            if old_reb != stats.reb:
-                                changes.append(f"REB: {old_reb} → {stats.reb}")
-                            if old_ast != stats.ast:
-                                changes.append(f"AST: {old_ast} → {stats.ast}")
-                            
-                            if changes:
-                                details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ✅ Updated {player.full_name}: {', '.join(changes)}")
-                            else:
-                                details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ✓ {player.full_name}: Stats unchanged ({stats.pts} PTS, {stats.reb} REB, {stats.ast} AST)")
-                        else:
-                            details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ⚠️ {player.full_name}: No season data found for {settings.current_season}")
-                            details["players_skipped"] += 1
-                        
-                        # Rate limiting
-                        await asyncio.sleep(0.6)
-                        
-                    except Exception as e:
-                        error_msg = f"Error updating player {stats.player_id}: {str(e)}"
-                        details["errors"].append(error_msg)
-                        details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ❌ {error_msg}")
-                        continue
-                
-                # Commit updates (will rollback if cancelled)
-                if details["players_updated"] > 0:
-                    try:
-                        await db.commit()
+                        total_processed += 1
+                    
+                    # Commit after processing all players in this batch (will rollback if cancelled)
+                    if batch_updated > 0:
+                        try:
+                            await db.commit()
+                            details["logs"].append("")
+                            details["logs"].append(f"💾 Batch {batch_number}: Committed {batch_updated} player updates")
+                            await update_run_progress(run_id, details, db_session=db)
+                            await db.commit()
+                        except asyncio.CancelledError:
+                            await db.rollback()
+                            raise
+                    else:
                         details["logs"].append("")
-                        details["logs"].append(f"💾 Committed {details['players_updated']} player updates to database")
-                    except asyncio.CancelledError:
-                        await db.rollback()
-                        raise
-                else:
-                    details["logs"].append("")
-                    details["logs"].append("ℹ️ No player updates to commit")
+                        details["logs"].append(f"ℹ️ Batch {batch_number}: No player updates to commit")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
+                    
+                    # Continue to next batch
+                    details["logs"].append(f"   Batch {batch_number} complete: {batch_updated} updated, {batch_skipped} skipped")
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
                 
                 duration = (datetime.now(timezone.utc) - start_time).total_seconds()
                 details["duration_seconds"] = duration
                 
                 # Final summary
                 details["logs"].append("")
-                details["logs"].append(f"📊 SUMMARY:")
+                details["logs"].append(f"📊 FINAL SUMMARY:")
+                details["logs"].append(f"   Total batches processed: {batch_number}")
                 details["logs"].append(f"   Players updated: {details['players_updated']}")
                 details["logs"].append(f"   Players skipped: {details['players_skipped']}")
-                details["logs"].append(f"   Total processed: {len(stats_to_update)}")
-                details["logs"].append(f"   Duration: {duration:.2f} seconds")
+                details["logs"].append(f"   Total processed: {total_processed}")
+                details["logs"].append(f"   Duration: {duration:.2f} seconds ({duration/60:.1f} minutes)")
                 if details["errors"]:
                     details["logs"].append(f"   Errors: {len(details['errors'])}")
+                
+                # Final progress update
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
                 
                 return {
                     "status": "success",
