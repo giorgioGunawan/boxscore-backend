@@ -1,6 +1,6 @@
 """Player service with hybrid data provider pattern (local-first, API-fallback)."""
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -551,12 +551,22 @@ async def _build_latest_game_response(db: AsyncSession, player: Player, game_sta
         opponent = game.away_team
         is_home = True
     
+    # Return UTC time (client should handle timezone conversion)
+    if game.start_time_utc:
+        utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
+        datetime_iso = utc_time.isoformat()
+        game_date = game.start_time_utc.strftime("%d %b %Y")  # UTC date formatted
+    else:
+        datetime_iso = None
+        game_date = None
+    
     return {
         "player_id": player.id,
         "player_name": player.full_name,
         "jersey_number": player.jersey_number,
         "season": game.season,
-        "game_date": game.start_time_utc.strftime("%d %b %Y") if game.start_time_utc else None,
+        "game_date": game_date,  # UTC date (formatted for display, but client should convert)
+        "datetime_utc": datetime_iso,  # Full ISO 8601 UTC datetime for client conversion
         "opponent": opponent.abbreviation if opponent else "???",
         "is_home": is_home,
         "pts": game_stats.pts,

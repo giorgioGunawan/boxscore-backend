@@ -893,12 +893,16 @@ class CronService:
                             home_team_id = team.id if is_home else opponent_id
                             away_team_id = opponent_id if is_home else team.id
                             
-                            from datetime import datetime as dt
+                            from datetime import datetime as dt, timezone
                             try:
                                 game_date_str = game_data["game_date"]
                                 game_time_str = game_data.get("game_time", "00:00")
+                                # NOTE: gameTimeEst from NBA API is UTC (despite "Est" in name)
+                                # Parse as UTC and store as naive UTC
                                 if game_time_str and game_time_str != "00:00":
                                     game_datetime = dt.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                                    # Treat as UTC (no conversion needed)
+                                    game_datetime = game_datetime.replace(tzinfo=timezone.utc).replace(tzinfo=None)
                                 else:
                                     game_datetime = dt.strptime(game_date_str, "%Y-%m-%d")
                             except (ValueError, TypeError):

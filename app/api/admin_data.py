@@ -1,6 +1,6 @@
 """Admin CMS API for direct data editing."""
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -425,24 +425,37 @@ async def list_games(
     result = await db.execute(query)
     games = result.scalars().all()
     
+    # Return UTC times (client should handle timezone conversion)
+    games_list = []
+    for g in games:
+        if g.start_time_utc:
+            utc_time = g.start_time_utc.replace(tzinfo=timezone.utc)
+            datetime_iso = utc_time.isoformat()
+            game_date = g.start_time_utc.strftime("%Y-%m-%d")
+            game_time = g.start_time_utc.strftime("%H:%M")
+        else:
+            datetime_iso = None
+            game_date = None
+            game_time = None
+        
+        games_list.append({
+            "id": g.id,
+            "nba_game_id": g.nba_game_id,
+            "home_team": g.home_team.abbreviation if g.home_team else None,
+            "away_team": g.away_team.abbreviation if g.away_team else None,
+            "home_team_id": g.home_team_id,
+            "away_team_id": g.away_team_id,
+            "home_score": g.home_score,
+            "away_score": g.away_score,
+            "status": g.status,
+            "game_date": game_date,  # UTC date
+            "game_time": game_time,  # UTC time (HH:MM format)
+            "datetime_utc": datetime_iso,  # Full ISO 8601 UTC datetime
+            "season": g.season,
+        })
+    
     return {
-        "games": [
-            {
-                "id": g.id,
-                "nba_game_id": g.nba_game_id,
-                "home_team": g.home_team.abbreviation if g.home_team else None,
-                "away_team": g.away_team.abbreviation if g.away_team else None,
-                "home_team_id": g.home_team_id,
-                "away_team_id": g.away_team_id,
-                "home_score": g.home_score,
-                "away_score": g.away_score,
-                "status": g.status,
-                "game_date": g.start_time_utc.strftime("%Y-%m-%d") if g.start_time_utc else None,
-                "game_time": g.start_time_utc.strftime("%H:%M") if g.start_time_utc else None,
-                "season": g.season,
-            }
-            for g in games
-        ],
+        "games": games_list,
         "count": len(games),
         "total": total,
         "offset": offset,
