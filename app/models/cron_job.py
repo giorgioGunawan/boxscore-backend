@@ -37,6 +37,7 @@ class CronRun(Base):
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("cron_jobs.id"), nullable=False)
     job_name = Column(String(100), nullable=False)
+    triggered_by = Column(String(20), default='cron', nullable=False)  # 'cron' or 'manual'
     started_at = Column(DateTime, nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
     status = Column(String(20), nullable=False)  # 'running', 'success', 'failed'

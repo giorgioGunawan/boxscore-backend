@@ -30,6 +30,7 @@ async def run_job_now(job_name: str, job_func, *args, **kwargs):
             run = CronRun(
                 job_id=0,  # Not linked to a cron_job record
                 job_name=job_name,
+                triggered_by="manual",  # Manually triggered
                 started_at=datetime.now(timezone.utc),
                 status="running"
             )
@@ -169,6 +170,7 @@ async def run_cron_job(job_name: str, job_func, *args, **kwargs):
             run = CronRun(
                 job_id=cron_job.id,
                 job_name=job_name,
+                triggered_by="cron",  # Automatically triggered by scheduler
                 started_at=datetime.now(timezone.utc),
                 status="running"
             )

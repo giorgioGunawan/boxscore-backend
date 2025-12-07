@@ -1534,6 +1534,7 @@
                         <thead>
                             <tr>
                                 <th>Job</th>
+                                <th>Trigger</th>
                                 <th>Started</th>
                                 <th>Duration</th>
                                 <th>Status</th>
@@ -1543,7 +1544,7 @@
                             </tr>
                         </thead>
                         <tbody id="cron-runs-tbody">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2880,9 +2881,15 @@
                     const rowStyle = (run.status === 'running' && !isStuck) ? 'background: rgba(255, 193, 7, 0.1); font-weight: 500;' : 
                                     isStuck ? 'background: rgba(255, 0, 0, 0.1); font-weight: 500;' : '';
                     
+                    // Format trigger source
+                    const triggerIcon = run.triggered_by === 'manual' ? '👤' : '⏰';
+                    const triggerText = run.triggered_by === 'manual' ? 'Manual' : 'Cron';
+                    const triggerColor = run.triggered_by === 'manual' ? 'var(--accent-blue)' : 'var(--text-muted)';
+                    
                     return `
                         <tr style="${rowStyle}">
                             <td><strong>${run.job_name}</strong>${(run.status === 'running' && !isStuck) ? ' <span style="color: var(--accent-yellow);">⏳</span>' : ''}${isStuck ? ' <span style="color: var(--accent-red);">⚠️ STUCK</span>' : ''}</td>
+                            <td><span style="color: ${triggerColor}; font-weight: 500;">${triggerIcon} ${triggerText}</span></td>
                             <td>${new Date(run.started_at).toLocaleString()}</td>
                             <td>${duration}</td>
                             <td><span style="color: ${statusColor}; font-weight: ${(run.status === 'running' && !isStuck) ? 'bold' : 'normal'};">${statusDisplay}</span></td>

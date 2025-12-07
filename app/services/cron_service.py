@@ -205,6 +205,7 @@ class CronService:
                     }
                 
                 teams_to_update = set()
+                final_games = []  # Track which games were actually marked as final
                 
                 # Log each game being checked
                 details["logs"].append("")
@@ -250,22 +251,31 @@ class CronService:
                                 details["errors"].append(error_msg)
                                 details["logs"].append(f"   [{game_idx}/{len(games_needing_update)}] ❌ {away_abbr} @ {home_abbr}: {error_msg}")
                             elif boxscore:
-                                old_status = game.status
-                                old_score = f"{game.home_score}-{game.away_score}" if game.home_score is not None else "N/A"
+                                # Check if game is actually final according to NBA API
+                                nba_status = boxscore.get("game_status", "").lower()
+                                is_final = "final" in nba_status
                                 
-                                game.home_score = boxscore.get("home_score")
-                                game.away_score = boxscore.get("away_score")
-                                game.status = "final"
-                                game.last_api_sync = datetime.now(timezone.utc)
-                                details["games_updated"] += 1
-                                
-                                new_score = f"{game.home_score}-{game.away_score}"
-                                details["logs"].append(f"   [{game_idx}/{len(games_needing_update)}] ✅ {away_abbr} @ {home_abbr}: {old_status} → final, Score: {old_score} → {new_score}")
+                                if is_final:
+                                    old_status = game.status
+                                    old_score = f"{game.home_score}-{game.away_score}" if game.home_score is not None else "N/A"
+                                    
+                                    game.home_score = boxscore.get("home_score")
+                                    game.away_score = boxscore.get("away_score")
+                                    game.status = "final"
+                                    game.last_api_sync = datetime.now(timezone.utc)
+                                    details["games_updated"] += 1
+                                    
+                                    new_score = f"{game.home_score}-{game.away_score}"
+                                    details["logs"].append(f"   [{game_idx}/{len(games_needing_update)}] ✅ {away_abbr} @ {home_abbr}: {old_status} → final, Score: {old_score} → {new_score}")
+                                    
+                                    teams_to_update.add(game.home_team_id)
+                                    teams_to_update.add(game.away_team_id)
+                                    final_games.append(game)  # Track this game as final
+                                else:
+                                    # Game is still live, skip it
+                                    details["logs"].append(f"   [{game_idx}/{len(games_needing_update)}] ⏸️ {away_abbr} @ {home_abbr}: Still in progress (status: {nba_status}), skipping")
                             else:
                                 details["logs"].append(f"   [{game_idx}/{len(games_needing_update)}] ⚠️ No boxscore data returned for {away_abbr} @ {home_abbr}")
-                            
-                            teams_to_update.add(game.home_team_id)
-                            teams_to_update.add(game.away_team_id)
                             
                         except Exception as e:
                             error_msg = f"Error processing game {game.id}: {str(e)}"
@@ -274,8 +284,12 @@ class CronService:
                 else:
                     details["logs"].append("✓ All games already have final scores, no updates needed")
                 
-                # Also add teams from games that didn't need updates
+                # Also add teams from games that didn't need updates (already final in DB)
+                # For player stats, we'll check if they need updating individually
                 for game in games_to_check:
+                    if game not in games_needing_update and game.status == "final":
+                        # Game is already final, add it to final_games for potential player stats update
+                        final_games.append(game)
                     if game not in games_needing_update:
                         teams_to_update.add(game.home_team_id)
                         teams_to_update.add(game.away_team_id)
@@ -387,17 +401,21 @@ class CronService:
                     details["logs"].append("ℹ️ No standings updates to commit")
                     await update_run_progress(run_id, details)
                 
-                # Update player game stats for players in these games (batched)
-                if games_to_check:
+                # Update player game stats ONLY for final games (not live games)
+                if final_games:
                     details["logs"].append("")
-                    details["logs"].append(f"👤 Updating player game stats for players in {len(games_to_check)} games:")
+                    details["logs"].append(f"👤 Updating player game stats for players in {len(final_games)} FINAL games:")
+                    await update_run_progress(run_id, details)
+                elif games_to_check and not final_games:
+                    details["logs"].append("")
+                    details["logs"].append("ℹ️ No final games to update player stats for (all games are still in progress)")
                     await update_run_progress(run_id, details)
                 
                 total_players_processed = 0
                 players_with_stats = 0
                 players_no_stats = 0
                 
-                for game_idx, game in enumerate(games_to_check, 1):
+                for game_idx, game in enumerate(final_games, 1):
                     # Check for cancellation
                     if cancellation_token:
                         cancellation_token.check()
@@ -417,7 +435,7 @@ class CronService:
                         )
                         players = result.scalars().all()
                         
-                        details["logs"].append(f"   [{game_idx}/{len(games_to_check)}] 🏀 {away_abbr} @ {home_abbr}: Fetching stats for {len(players)} players in parallel...")
+                        details["logs"].append(f"   [{game_idx}/{len(final_games)}] 🏀 {away_abbr} @ {home_abbr}: Fetching stats for {len(players)} players in parallel...")
                         await update_run_progress(run_id, details)
                         
                         # Check for cancellation
@@ -466,6 +484,15 @@ class CronService:
                                         reb = latest_game.get("reb", 0)
                                         ast = latest_game.get("ast", 0)
                                         
+                                        # Only update if stats don't exist OR game was just marked final
+                                        # (to avoid re-fetching stats for games that are already complete)
+                                        if existing and existing.last_api_sync and existing.last_api_sync > game.start_time_utc:
+                                            # Stats already exist and were synced after game started, skip
+                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✓ {player.full_name}: Stats already synced")
+                                            players_no_stats += 1
+                                            total_players_processed += 1
+                                            continue
+                                        
                                         if existing:
                                             existing.pts = pts
                                             existing.reb = reb
@@ -474,7 +501,7 @@ class CronService:
                                             existing.blk = latest_game.get("blk", 0)
                                             existing.minutes = latest_game.get("minutes")
                                             existing.last_api_sync = datetime.now(timezone.utc)
-                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✅ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST")
+                                            details["logs"].append(f"      [{player_idx}/{len(players)}] ✅ {player.full_name}: {pts} PTS, {reb} REB, {ast} AST (updated)")
                                         else:
                                             stats = PlayerGameStats(
                                                 player_id=player.id,
