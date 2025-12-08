@@ -691,7 +691,12 @@ class CronService:
                 
                 details["logs"] = []  # Initialize logs array
                 details["logs"].append(f"🔍 Starting update_player_season_averages_batch job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
                 details["logs"].append(f"📦 Batch size: {batch_size}")
+                details["logs"].append(f"🔄 Force mode: {'ON' if force else 'OFF'}")
+                details["logs"].append(f"📅 Season: {settings.current_season}")
                 
                 # Get players that need updating (haven't been updated in 3 days)
                 if force:
@@ -718,6 +723,13 @@ class CronService:
                 stats_to_update = result.scalars().all()
                 
                 details["logs"].append(f"📊 Found {len(stats_to_update)} players needing updates")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                # Get total player count for context
+                total_players_result = await db.execute(select(func.count(Player.id)))
+                total_players = total_players_result.scalar()
+                details["logs"].append(f"📊 Total players in database: {total_players}")
                 
                 if not stats_to_update:
                     details["logs"].append("✅ No players need updating. All players are up to date.")
@@ -752,6 +764,8 @@ class CronService:
                         
                         last_sync = stats.last_api_sync.strftime('%Y-%m-%d %H:%M') if stats.last_api_sync else "Never"
                         details["logs"].append(f"   [{idx}/{len(stats_to_update)}] 📡 Fetching stats for {player.full_name} (Last sync: {last_sync})...")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                         
                         # Run blocking API call in thread pool to avoid blocking event loop
                         loop = asyncio.get_event_loop()
@@ -765,6 +779,9 @@ class CronService:
                             old_pts = stats.pts
                             old_reb = stats.reb
                             old_ast = stats.ast
+                            old_stl = stats.stl
+                            old_blk = stats.blk
+                            old_gp = stats.games_played
                             
                             stats.pts = season_data["pts"]
                             stats.reb = season_data["reb"]
@@ -781,19 +798,30 @@ class CronService:
                             
                             changes = []
                             if old_pts != stats.pts:
-                                changes.append(f"PTS: {old_pts} → {stats.pts}")
+                                changes.append(f"PTS: {old_pts:.1f} → {stats.pts:.1f}")
                             if old_reb != stats.reb:
-                                changes.append(f"REB: {old_reb} → {stats.reb}")
+                                changes.append(f"REB: {old_reb:.1f} → {stats.reb:.1f}")
                             if old_ast != stats.ast:
-                                changes.append(f"AST: {old_ast} → {stats.ast}")
+                                changes.append(f"AST: {old_ast:.1f} → {stats.ast:.1f}")
+                            if old_stl != stats.stl:
+                                changes.append(f"STL: {old_stl:.1f} → {stats.stl:.1f}")
+                            if old_blk != stats.blk:
+                                changes.append(f"BLK: {old_blk:.1f} → {stats.blk:.1f}")
+                            if old_gp != stats.games_played:
+                                changes.append(f"GP: {old_gp} → {stats.games_played}")
                             
                             if changes:
                                 details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ✅ Updated {player.full_name}: {', '.join(changes)}")
                             else:
-                                details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ✓ {player.full_name}: Stats unchanged ({stats.pts} PTS, {stats.reb} REB, {stats.ast} AST)")
+                                details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ✓ {player.full_name}: Stats unchanged ({stats.pts:.1f} PTS, {stats.reb:.1f} REB, {stats.ast:.1f} AST, {stats.games_played} GP)")
                         else:
                             details["logs"].append(f"   [{idx}/{len(stats_to_update)}] ⚠️ {player.full_name}: No season data found for {settings.current_season}")
                             details["players_skipped"] += 1
+                        
+                        # Commit every 5 players to show progress
+                        if idx % 5 == 0 and details["players_updated"] > 0:
+                            await db.commit()
+                            await update_run_progress(run_id, details, db_session=db)
                         
                         # Rate limiting
                         await asyncio.sleep(0.6)
@@ -871,11 +899,24 @@ class CronService:
                     cancellation_token.check()
                 
                 details["logs"].append(f"🔍 Starting update_schedules job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
                 details["logs"].append(f"📅 Season: {settings.current_season}")
+                details["logs"].append(f"🔄 Force mode: {'ON' if force else 'OFF'}")
                 
                 result = await db.execute(select(Team))
                 teams = result.scalars().all()
                 details["logs"].append(f"🏟️ Found {len(teams)} teams in database")
+                
+                # Get current game count
+                games_count_result = await db.execute(select(func.count(Game.id)))
+                current_game_count = games_count_result.scalar()
+                details["logs"].append(f"📊 Current games in database: {current_game_count}")
+                
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
                 details["logs"].append("")
                 details["logs"].append(f"📋 Processing schedules for {len(teams)} teams:")
                 
@@ -898,12 +939,17 @@ class CronService:
                             )
                         )
                         details["logs"].append(f"   [{team_idx}/{len(teams)}] ✓ Retrieved {len(schedule)} games for {team.abbreviation}")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                         
                         team_games_added = 0
                         team_games_updated = 0
                         team_games_skipped = 0
+                        team_games_errors = 0
                         
-                        for game_data in schedule:
+                        details["logs"].append(f"   [{team_idx}/{len(teams)}] 🔍 Processing {len(schedule)} games for {team.abbreviation}...")
+                        
+                        for game_idx, game_data in enumerate(schedule, 1):
                             nba_game_id = game_data["nba_game_id"]
                             
                             result = await db.execute(
@@ -914,35 +960,72 @@ class CronService:
                             opponent_id = team_abbr_map.get(game_data["opponent_abbr"])
                             if not opponent_id:
                                 team_games_skipped += 1
+                                if game_idx <= 3 or game_idx == len(schedule):  # Log first 3 and last
+                                    details["logs"].append(f"      [{game_idx}/{len(schedule)}] ⚠️ Skipping game {nba_game_id}: Opponent '{game_data['opponent_abbr']}' not found")
                                 continue
                             
                             is_home = game_data["is_home"]
                             home_team_id = team.id if is_home else opponent_id
                             away_team_id = opponent_id if is_home else team.id
                             
-                            from datetime import datetime as dt
+                            # Parse game datetime - use gameDateTimeUTC from API (same logic as refresh_team_schedule)
                             try:
-                                game_date_str = game_data["game_date"]
-                                game_time_str = game_data.get("game_time", "00:00")
-                                if game_time_str and game_time_str != "00:00":
-                                    game_datetime = dt.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                                # If we have the full UTC datetime string from API, use it directly
+                                if game_data.get("game_datetime_utc"):
+                                    # Parse ISO format: "2025-12-09T00:00:00Z"
+                                    game_datetime_str = game_data["game_datetime_utc"]
+                                    if game_datetime_str.endswith('Z'):
+                                        game_datetime_str = game_datetime_str[:-1] + '+00:00'
+                                    game_datetime = datetime.fromisoformat(game_datetime_str).replace(tzinfo=None)  # Store as naive UTC
                                 else:
-                                    game_datetime = dt.strptime(game_date_str, "%Y-%m-%d")
-                            except (ValueError, TypeError):
+                                    # Fallback: parse date/time separately (shouldn't happen with new API format)
+                                    game_date_str = game_data["game_date"]
+                                    game_time_str = game_data.get("game_time", "00:00")
+                                    
+                                    if game_time_str and game_time_str != "00:00":
+                                        # Parse as UTC (gameTimeEst with Z is UTC, not Eastern)
+                                        game_datetime = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                                        # No timezone conversion needed - already UTC
+                                    else:
+                                        game_datetime = datetime.strptime(game_date_str, "%Y-%m-%d")
+                            except (ValueError, TypeError) as e:
+                                details["logs"].append(f"      [{game_idx}/{len(schedule)}] ⚠️ Error parsing datetime for game {nba_game_id}: {e}")
                                 team_games_skipped += 1
+                                team_games_errors += 1
                                 continue
                             
                             if existing:
                                 # Update existing game
                                 old_status = existing.status
                                 old_score = f"{existing.home_score}-{existing.away_score}" if existing.home_score is not None else "N/A"
+                                old_time = existing.start_time_utc.strftime('%Y-%m-%d %H:%M:%S') if existing.start_time_utc else "None"
+                                new_time = game_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                                
+                                time_changed = existing.start_time_utc != game_datetime
+                                status_changed = existing.status != game_data.get("status", "scheduled")
+                                score_changed = (existing.home_score != game_data.get("home_score") or 
+                                               existing.away_score != game_data.get("away_score"))
                                 
                                 existing.status = game_data.get("status", "scheduled")
+                                existing.start_time_utc = game_datetime  # Update time with correct UTC from API
                                 existing.home_score = game_data.get("home_score")
                                 existing.away_score = game_data.get("away_score")
                                 existing.last_api_sync = datetime.now(timezone.utc)
                                 details["games_updated"] += 1
                                 team_games_updated += 1
+                                
+                                # Log changes
+                                changes = []
+                                if time_changed:
+                                    changes.append(f"Time: {old_time} → {new_time}")
+                                if status_changed:
+                                    changes.append(f"Status: {old_status} → {existing.status}")
+                                if score_changed:
+                                    new_score = f"{existing.home_score}-{existing.away_score}" if existing.home_score is not None else "N/A"
+                                    changes.append(f"Score: {old_score} → {new_score}")
+                                
+                                if changes and (game_idx <= 5 or game_idx % 20 == 0):  # Log first 5 and every 20th
+                                    details["logs"].append(f"      [{game_idx}/{len(schedule)}] 🔄 Updated game {nba_game_id}: {', '.join(changes)}")
                             else:
                                 # Create new game
                                 game = Game(
@@ -951,7 +1034,7 @@ class CronService:
                                     season_type="Regular Season",
                                     home_team_id=home_team_id,
                                     away_team_id=away_team_id,
-                                    start_time_utc=game_datetime,
+                                    start_time_utc=game_datetime,  # Use correct UTC datetime
                                     status=game_data.get("status", "scheduled"),
                                     home_score=game_data.get("home_score"),
                                     away_score=game_data.get("away_score"),
@@ -961,13 +1044,35 @@ class CronService:
                                 db.add(game)
                                 details["games_added"] += 1
                                 team_games_added += 1
+                                
+                                # Log new games (first 5 and every 10th)
+                                if game_idx <= 5 or game_idx % 10 == 0:
+                                    game_time_str = game_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                                    home_abbr = team.abbreviation if game_data["is_home"] else game_data["opponent_abbr"]
+                                    away_abbr = game_data["opponent_abbr"] if game_data["is_home"] else team.abbreviation
+                                    details["logs"].append(f"      [{game_idx}/{len(schedule)}] ➕ Added game {nba_game_id}: {away_abbr} @ {home_abbr} ({game_time_str} UTC)")
+                            
+                            # Commit every 10 games to show progress
+                            if (game_idx % 10 == 0) and (team_games_added > 0 or team_games_updated > 0):
+                                await db.commit()
+                                await update_run_progress(run_id, details, db_session=db)
+                        
+                        # Final commit for this team
+                        if team_games_added > 0 or team_games_updated > 0:
+                            await db.commit()
+                            await update_run_progress(run_id, details, db_session=db)
                         
                         if team_games_added > 0 or team_games_updated > 0:
                             details["logs"].append(f"   [{team_idx}/{len(teams)}] ✅ {team.abbreviation}: {team_games_added} added, {team_games_updated} updated, {team_games_skipped} skipped")
                         else:
                             details["logs"].append(f"   [{team_idx}/{len(teams)}] ✓ {team.abbreviation}: No changes ({team_games_skipped} skipped)")
                         
+                        if team_games_errors > 0:
+                            details["logs"].append(f"   [{team_idx}/{len(teams)}] ⚠️ {team.abbreviation}: {team_games_errors} errors encountered")
+                        
                         details["teams_updated"] += 1
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
                         
                     except Exception as e:
                         error_msg = f"Error updating schedule for team {team.id}: {str(e)}"
