@@ -1,4 +1,5 @@
 """Admin CMS API for direct data editing."""
+import zoneinfo
 from typing import Optional, List
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -425,16 +426,17 @@ async def list_games(
     result = await db.execute(query)
     games = result.scalars().all()
     
-    # Return UTC times (client should handle timezone conversion)
+    # Convert UTC to Eastern Time for display
+    eastern = zoneinfo.ZoneInfo("America/New_York")
+    
     games_list = []
     for g in games:
         if g.start_time_utc:
             utc_time = g.start_time_utc.replace(tzinfo=timezone.utc)
-            datetime_iso = utc_time.isoformat()
-            game_date = g.start_time_utc.strftime("%Y-%m-%d")
-            game_time = g.start_time_utc.strftime("%H:%M")
+            eastern_time = utc_time.astimezone(eastern)
+            game_date = eastern_time.strftime("%Y-%m-%d")
+            game_time = eastern_time.strftime("%H:%M")
         else:
-            datetime_iso = None
             game_date = None
             game_time = None
         
@@ -448,9 +450,8 @@ async def list_games(
             "home_score": g.home_score,
             "away_score": g.away_score,
             "status": g.status,
-            "game_date": game_date,  # UTC date
-            "game_time": game_time,  # UTC time (HH:MM format)
-            "datetime_utc": datetime_iso,  # Full ISO 8601 UTC datetime
+            "game_date": game_date,
+            "game_time": game_time,
             "season": g.season,
         })
     

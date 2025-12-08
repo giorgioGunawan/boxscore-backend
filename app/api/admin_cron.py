@@ -171,7 +171,8 @@ async def list_all_runs(
 @router.post("/jobs/{job_id}/trigger")
 async def trigger_cron_job(
     job_id: int,
-    hours_back: int = 7,
+    hours_back: int = Query(default=7),
+    force: bool = Query(default=False),
     db: AsyncSession = Depends(get_db)
 ):
     """Manually trigger a cron job with optional parameters."""
@@ -187,15 +188,15 @@ async def trigger_cron_job(
     from app.services.cron_service import CronService
     
     job_functions = {
-        "update_finished_games": lambda run_id, cancellation_token=None: CronService.update_finished_games(run_id, cancellation_token, hours_back=hours_back),
-        "update_player_season_averages": lambda run_id, cancellation_token=None: CronService.update_player_season_averages_batch(run_id, cancellation_token, batch_size=50),
-        "update_schedules": CronService.update_schedules,
+        "update_finished_games": lambda run_id, cancellation_token=None: CronService.update_finished_games(run_id, cancellation_token, hours_back=hours_back, force=force),
+        "update_player_season_averages": lambda run_id, cancellation_token=None: CronService.update_player_season_averages_batch(run_id, cancellation_token, batch_size=50, force=force),
+        "update_schedules": lambda run_id, cancellation_token=None: CronService.update_schedules(run_id, cancellation_token, force=force),
     }
     
     if job.name not in job_functions:
         raise HTTPException(status_code=400, detail=f"Unknown job: {job.name}")
     
-    print(f"[trigger_cron_job] Triggering job: {job.name} with hours_back={hours_back}")
+    print(f"[trigger_cron_job] Triggering job: {job.name} with hours_back={hours_back}, force={force}")
     
     # Create and store the task to prevent garbage collection
     task = asyncio.create_task(run_job_now(job.name, job_functions[job.name]))

@@ -901,6 +901,56 @@
                 transform: translateY(0);
             }
         }
+
+        .trigger-cron-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input[type="number"] {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+
+        .form-group .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .form-group .checkbox-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -912,6 +962,21 @@
             <div class="custom-modal-buttons">
                 <button class="btn-cancel" onclick="closeCustomModal()">Cancel</button>
                 <button class="btn-confirm" id="customModalConfirm" onclick="confirmCustomModal()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for triggering cron jobs with options -->
+    <div id="triggerCronModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeTriggerCronModal()">
+        <div class="custom-modal" style="max-width: 600px;">
+            <h3 id="triggerCronModalTitle">▶️ Trigger Cron Job</h3>
+            <p id="triggerCronModalMessage">Configure options and confirm to run this job immediately.</p>
+            <div id="triggerCronModalContent" style="margin-bottom: 1.5rem;">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+            <div class="custom-modal-buttons">
+                <button class="btn-cancel" onclick="closeTriggerCronModal()">Cancel</button>
+                <button class="btn-confirm" id="triggerCronModalConfirm" onclick="confirmTriggerCronModal()">Run Now</button>
             </div>
         </div>
     </div>
@@ -1638,7 +1703,105 @@
             if (e.key === 'Escape' && document.getElementById('customModalOverlay').classList.contains('active')) {
                 closeCustomModal();
             }
+            if (e.key === 'Escape' && document.getElementById('triggerCronModalOverlay').classList.contains('active')) {
+                closeTriggerCronModal();
+            }
         });
+
+        // =====================
+        // TRIGGER CRON MODAL FUNCTIONS
+        // =====================
+        let triggerCronModalCallback = null;
+        let currentJobId = null;
+        let currentJobName = null;
+
+        function showTriggerCronModal(jobId, jobName) {
+            return new Promise((resolve) => {
+                currentJobId = jobId;
+                currentJobName = jobName;
+                triggerCronModalCallback = resolve;
+
+                const overlay = document.getElementById('triggerCronModalOverlay');
+                const titleEl = document.getElementById('triggerCronModalTitle');
+                const messageEl = document.getElementById('triggerCronModalMessage');
+                const contentEl = document.getElementById('triggerCronModalContent');
+
+                titleEl.textContent = `▶️ Trigger Cron Job: ${jobName}`;
+                messageEl.textContent = `Configure options and confirm to run "${jobName}" immediately in the background.`;
+
+                // Build form content based on job type
+                let formHTML = '';
+
+                // Hours back input for update_finished_games
+                if (jobName === 'update_finished_games') {
+                    formHTML += `
+                        <div class="form-group">
+                            <label for="hoursBackInput">Hours Back</label>
+                            <input type="number" id="hoursBackInput" value="12" min="1" max="168" placeholder="12">
+                            <small style="color: var(--text-muted); font-size: 0.85rem;">How many hours back to check for finished games (default: 12)</small>
+                        </div>
+                    `;
+                }
+
+                // Force update checkbox (available for all jobs)
+                formHTML += `
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="forceUpdateCheckbox">
+                            <label for="forceUpdateCheckbox" class="checkbox-label">
+                                Force update (skip checks - update all data regardless of last sync time)
+                            </label>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 0.85rem;">When enabled, will update all data even if it was recently synced</small>
+                    </div>
+                `;
+
+                contentEl.innerHTML = `<div class="trigger-cron-form">${formHTML}</div>`;
+
+                // Show modal
+                overlay.classList.add('active');
+
+                // Focus first input
+                const firstInput = contentEl.querySelector('input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 100);
+                }
+            });
+        }
+
+        function closeTriggerCronModal() {
+            const overlay = document.getElementById('triggerCronModalOverlay');
+            overlay.classList.remove('active');
+            if (triggerCronModalCallback) {
+                triggerCronModalCallback(null);
+                triggerCronModalCallback = null;
+            }
+            currentJobId = null;
+            currentJobName = null;
+        }
+
+        function confirmTriggerCronModal() {
+            const overlay = document.getElementById('triggerCronModalOverlay');
+            overlay.classList.remove('active');
+
+            let hoursBack = 12; // Default
+            let force = false;
+
+            if (currentJobName === 'update_finished_games') {
+                const hoursBackInput = document.getElementById('hoursBackInput');
+                hoursBack = parseInt(hoursBackInput?.value) || 12;
+            }
+
+            const forceCheckbox = document.getElementById('forceUpdateCheckbox');
+            force = forceCheckbox?.checked || false;
+
+            if (triggerCronModalCallback) {
+                triggerCronModalCallback({ hoursBack, force });
+                triggerCronModalCallback = null;
+            }
+            currentJobId = null;
+            currentJobName = null;
+        }
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -2992,25 +3155,22 @@
         let watchedRunId = null;
 
         async function triggerCronJob(jobId, jobName) {
-            let hoursBack = 7; // Default
-            
-            // For update_finished_games, ask for hours_back parameter
-            if (jobName === 'update_finished_games') {
-                const userInput = prompt('How many hours back to check for finished games?', '7');
-                if (userInput === null) return; // Cancelled
-                hoursBack = parseInt(userInput) || 7;
-            }
-            
-            const confirmed = await showCustomModal(
-                '▶️ Trigger Cron Job',
-                `Run "${jobName}" now?${jobName === 'update_finished_games' ? ` (Checking last ${hoursBack} hours)` : ''}\n\nThis will execute the job immediately in the background.`,
-                'Run Now',
-                false
-            );
-            if (!confirmed) return;
+            // Show modal with options
+            const options = await showTriggerCronModal(jobId, jobName);
+            if (!options) return; // Cancelled
+
+            const { hoursBack, force } = options;
             
             try {
-                const response = await fetch(`${API_BASE}/admin/cron/jobs/${jobId}/trigger?hours_back=${hoursBack}`, { method: 'POST' });
+                const params = new URLSearchParams();
+                if (jobName === 'update_finished_games') {
+                    params.append('hours_back', hoursBack.toString());
+                }
+                if (force) {
+                    params.append('force', 'true');
+                }
+
+                const response = await fetch(`${API_BASE}/admin/cron/jobs/${jobId}/trigger?${params.toString()}`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to trigger job');
                 
                 showToast('Cron job triggered! Watching logs...');

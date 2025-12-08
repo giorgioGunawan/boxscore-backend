@@ -243,15 +243,12 @@ async def seed_schedules(db):
                 away_team_id = opponent_id if is_home else team.id
                 
                 # Parse game date and time
-                # NOTE: gameTimeEst from NBA API is UTC (despite "Est" in name)
-                from datetime import datetime, timezone
+                from datetime import datetime
                 try:
                     game_date_str = game_data["game_date"]
                     game_time_str = game_data.get("game_time", "00:00")
                     if game_time_str and game_time_str != "00:00":
-                        # Parse as UTC (no conversion needed)
                         game_datetime = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
-                        game_datetime = game_datetime.replace(tzinfo=timezone.utc).replace(tzinfo=None)
                     else:
                         game_datetime = datetime.strptime(game_date_str, "%Y-%m-%d")
                 except (ValueError, TypeError):

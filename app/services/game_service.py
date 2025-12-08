@@ -87,29 +87,29 @@ class GameService:
                 # Continue with whatever games we have in DB
         
         response = []
+        # Convert UTC back to Eastern Time for display
+        eastern = zoneinfo.ZoneInfo("America/New_York")
+        
         for game in games:
             is_home = game.home_team_id == team_id
             opponent = game.away_team if is_home else game.home_team
             
-            # Return UTC time in ISO 8601 format (standard for APIs)
-            # Client/widget should convert to local timezone
+            # Convert UTC to Eastern Time
             if game.start_time_utc:
-                # Make timezone-aware UTC, then format as ISO 8601
+                # Make UTC timezone-aware, convert to Eastern, then format
                 utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
-                datetime_iso = utc_time.isoformat()  # e.g., "2025-12-07T09:00:00+00:00"
-                game_date = game.start_time_utc.strftime("%Y-%m-%d")
-                game_time = game.start_time_utc.strftime("%H:%M")
+                eastern_time = utc_time.astimezone(eastern)
+                game_date = eastern_time.strftime("%Y-%m-%d")
+                game_time = eastern_time.strftime("%H:%M")
             else:
-                datetime_iso = None
                 game_date = None
                 game_time = None
             
             response.append({
                 "game_id": game.id,
                 "nba_game_id": game.nba_game_id,
-                "date": game_date,  # UTC date
-                "time": game_time,  # UTC time (HH:MM format)
-                "datetime_utc": datetime_iso,  # Full ISO 8601 UTC datetime for client conversion
+                "date": game_date,
+                "time": game_time,
                 "opponent": opponent.abbreviation if opponent else "TBD",
                 "opponent_name": opponent.name if opponent else "TBD",
                 "is_home": is_home,
@@ -188,6 +188,9 @@ class GameService:
                 # Continue with whatever games we have in DB
         
         response = []
+        # Convert UTC back to Eastern Time for display
+        eastern = zoneinfo.ZoneInfo("America/New_York")
+        
         for game in games:
             is_home = game.home_team_id == team_id
             opponent = game.away_team if is_home else game.home_team
@@ -198,21 +201,18 @@ class GameService:
             if team_score is not None and opponent_score is not None:
                 result_str = "W" if team_score > opponent_score else "L"
             
-            # Return UTC time in ISO 8601 format (standard for APIs)
-            # Client/widget should convert to local timezone
+            # Convert UTC to Eastern Time
             if game.start_time_utc:
                 utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
-                datetime_iso = utc_time.isoformat()
-                game_date = game.start_time_utc.strftime("%Y-%m-%d")
+                eastern_time = utc_time.astimezone(eastern)
+                game_date = eastern_time.strftime("%Y-%m-%d")
             else:
-                datetime_iso = None
                 game_date = None
             
             response.append({
                 "game_id": game.id,
                 "nba_game_id": game.nba_game_id,
-                "date": game_date,  # UTC date
-                "datetime_utc": datetime_iso,  # Full ISO 8601 UTC datetime for client conversion
+                "date": game_date,
                 "opponent": opponent.abbreviation if opponent else "???",
                 "opponent_name": opponent.name if opponent else "???",
                 "is_home": is_home,
@@ -290,6 +290,9 @@ class GameService:
             
             # Parse game date - NBA API returns dates in Eastern Time
             try:
+                from datetime import timezone
+                import zoneinfo
+                
                 # Parse date (no time component, assume midnight Eastern)
                 eastern = zoneinfo.ZoneInfo("America/New_York")
                 game_date_et = datetime.strptime(game_data["game_date"], "%Y-%m-%d")
@@ -407,20 +410,24 @@ class GameService:
             home_team_id = team.id if is_home else opponent_id
             away_team_id = opponent_id if is_home else team.id
             
-            # Parse game date and time
-            # NOTE: gameTimeEst from NBA API is actually UTC (despite "Est" in name)
-            # The Z suffix confirms it's UTC. We should NOT convert it.
+            # Parse game date and time - NBA API returns times in Eastern Time
             try:
+                from datetime import timezone
+                import zoneinfo
+                
                 game_date_str = game_data["game_date"]
                 game_time_str = game_data.get("game_time", "00:00")
                 
+                # Parse as Eastern Time
+                eastern = zoneinfo.ZoneInfo("America/New_York")
                 if game_time_str and game_time_str != "00:00":
-                    # Parse as UTC (gameTimeEst is already UTC)
-                    game_datetime_utc = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
-                    game_datetime = game_datetime_utc.replace(tzinfo=timezone.utc).replace(tzinfo=None)  # Store as naive UTC
+                    game_datetime_et = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
                 else:
-                    # No time, just use date at midnight UTC
-                    game_datetime = datetime.strptime(game_date_str, "%Y-%m-%d")
+                    game_datetime_et = datetime.strptime(game_date_str, "%Y-%m-%d")
+                
+                # Make it timezone-aware (Eastern) then convert to UTC
+                game_datetime_et = game_datetime_et.replace(tzinfo=eastern)
+                game_datetime = game_datetime_et.astimezone(timezone.utc).replace(tzinfo=None)  # Store as naive UTC
             except (ValueError, TypeError):
                 continue
             
@@ -514,6 +521,9 @@ class GameService:
         
         # Parse game date - NBA API returns dates in Eastern Time  
         try:
+            from datetime import timezone
+            import zoneinfo
+            
             eastern = zoneinfo.ZoneInfo("America/New_York")
             try:
                 game_date_et = datetime.strptime(game_log["game_date"], "%b %d, %Y")
