@@ -731,24 +731,24 @@
             padding: 0.75rem;
             border-bottom: 1px solid var(--border);
             color: var(--text-secondary);
-            vertical-align: top;
+            vertical-align: middle;
         }
         
         /* Fix action column alignment */
         .cms-table td.actions,
         .cms-table td.sticky-actions {
-            vertical-align: top;
+            vertical-align: middle;
             padding: 0.75rem;
             min-width: 200px;
         }
         
         .cms-table td.actions > div:first-child,
         .cms-table td.sticky-actions > div:first-child {
-            display: flex;
+            display: inline-flex;
             gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
-            margin-bottom: 0.5rem;
+            vertical-align: middle;
         }
         
         .cms-table td.actions .btn-edit,
@@ -757,17 +757,7 @@
         .cms-table td.sticky-actions .btn-delete {
             margin: 0;
             flex-shrink: 0;
-        }
-        
-        /* Ensure all table cells have consistent alignment */
-        #cron-jobs-table td,
-        #cron-runs-table td {
             vertical-align: middle;
-        }
-        
-        #cron-runs-table td:last-child {
-            vertical-align: top;
-            padding: 0.75rem;
         }
         
         /* Ensure action column header has same styling */
@@ -782,26 +772,91 @@
             border-bottom: 1px solid var(--border);
         }
         
-        /* Fix action column cell alignment */
+        /* CRON TABLES - Force consistent middle alignment for ALL cells */
+        #cron-jobs-table td,
+        #cron-runs-table td {
+            vertical-align: middle !important;
+            padding: 0.75rem !important;
+        }
+        
+        /* Action column cells - same middle alignment, ensure it works with multi-line cells */
+        #cron-jobs-table td.sticky-actions,
         #cron-runs-table td:last-child {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: flex-start;
+            vertical-align: middle !important;
+            padding: 0.75rem !important;
             min-width: 250px;
         }
         
+        /* Button container - inline-flex to keep buttons on same baseline */
+        #cron-jobs-table td.sticky-actions > div,
         #cron-runs-table td:last-child > div:first-child {
-            display: flex;
+            display: inline-flex;
             gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
-            width: 100%;
+            vertical-align: middle;
+            line-height: 1.5;
         }
         
+        /* Error message - separate line below buttons, doesn't affect button alignment */
+        #cron-runs-table td:last-child > div:last-child:not(:first-child) {
+            display: block;
+            margin-top: 0.5rem;
+            white-space: normal;
+            line-height: 1.4;
+        }
+        
+        /* Buttons - consistent inline-block alignment */
+        #cron-jobs-table td.sticky-actions .btn-edit,
+        #cron-jobs-table td.sticky-actions .btn-delete,
         #cron-runs-table td:last-child .btn-edit,
         #cron-runs-table td:last-child .btn-delete {
-            flex-shrink: 0;
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        /* CRON JOBS TABLE - Specific fixes for action column alignment */
+        #cron-jobs-table tbody tr {
+            display: table-row;
+        }
+        
+        /* Force action column to align middle with other cells */
+        #cron-jobs-table td.sticky-actions {
+            display: table-cell !important;
+            vertical-align: middle !important;
+            text-align: center !important;
+            padding: 0.75rem !important;
+            line-height: normal !important;
+        }
+        
+        /* Button container - center aligned */
+        #cron-jobs-table td.sticky-actions > div {
+            display: inline-flex !important;
+            gap: 0.5rem !important;
+            align-items: center !important;
+            justify-content: center !important;
+            vertical-align: middle !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.5 !important;
+        }
+        
+        /* Ensure buttons are properly aligned - same height as other cell content */
+        #cron-jobs-table td.sticky-actions .btn-edit,
+        #cron-jobs-table td.sticky-actions .btn-delete {
+            vertical-align: middle !important;
+            margin: 0 !important;
+            display: inline-block !important;
+            line-height: 1.5 !important;
+            height: auto !important;
+        }
+        
+        /* Match the line-height of other cells that have <br> tags */
+        #cron-jobs-table td:first-child,
+        #cron-jobs-table td:nth-child(7) {
+            line-height: 1.5;
         }
 
         .cms-table tr:hover td {
@@ -1022,6 +1077,30 @@
             font-size: 0.9rem;
             cursor: pointer;
         }
+
+        /* Info icon tooltip */
+        [title] {
+            position: relative;
+        }
+
+        /* Details view button styling */
+        .btn-view-details {
+            padding: 0.35rem 0.65rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+
+        .btn-view-details:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
@@ -1048,6 +1127,19 @@
             <div class="custom-modal-buttons">
                 <button class="btn-cancel" onclick="closeTriggerCronModal()">Cancel</button>
                 <button class="btn-confirm" id="triggerCronModalConfirm" onclick="confirmTriggerCronModal()">Run Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for viewing cron run details -->
+    <div id="runDetailsModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeRunDetailsModal()">
+        <div class="custom-modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h3 id="runDetailsModalTitle">📋 Cron Run Details</h3>
+            <div id="runDetailsModalContent" style="margin-bottom: 1.5rem;">
+                <pre id="runDetailsModalJson" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;"></pre>
+            </div>
+            <div class="custom-modal-buttons">
+                <button class="btn-cancel" onclick="closeRunDetailsModal()">Close</button>
             </div>
         </div>
     </div>
@@ -1836,13 +1928,16 @@
             }
         }
 
-        // Allow ESC to close modal
+        // Allow ESC to close modals
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('customModalOverlay').classList.contains('active')) {
-                closeCustomModal();
-            }
-            if (e.key === 'Escape' && document.getElementById('triggerCronModalOverlay').classList.contains('active')) {
-                closeTriggerCronModal();
+            if (e.key === 'Escape') {
+                if (document.getElementById('customModalOverlay').classList.contains('active')) {
+                    closeCustomModal();
+                } else if (document.getElementById('triggerCronModalOverlay').classList.contains('active')) {
+                    closeTriggerCronModal();
+                } else if (document.getElementById('runDetailsModalOverlay').classList.contains('active')) {
+                    closeRunDetailsModal();
+                }
             }
         });
 
@@ -1939,6 +2034,46 @@
             }
             currentJobId = null;
             currentJobName = null;
+        }
+
+        // =====================
+        // RUN DETAILS MODAL FUNCTIONS
+        // =====================
+        async function viewRunDetails(runId) {
+            try {
+                const data = await apiCall(`/admin/cron/runs/${runId}/logs`);
+                const overlay = document.getElementById('runDetailsModalOverlay');
+                const titleEl = document.getElementById('runDetailsModalTitle');
+                const jsonEl = document.getElementById('runDetailsModalJson');
+                
+                titleEl.textContent = `📋 Cron Run Details: ${data.job_name}`;
+                
+                // Format the details nicely
+                const details = data.details || {};
+                const formatted = {
+                    "Run Information": {
+                        "Job Name": data.job_name,
+                        "Status": data.status,
+                        "Started At": formatReadableDate(data.started_at),
+                        "Completed At": data.completed_at ? formatReadableDate(data.completed_at) : 'N/A',
+                        "Duration": data.duration_seconds ? `${data.duration_seconds}s` : 'N/A',
+                        "Items Updated": data.items_updated || 0,
+                        "Triggered By": data.triggered_by || 'N/A',
+                        "Error": data.error_message || 'None'
+                    },
+                    "Details": details
+                };
+                
+                jsonEl.textContent = JSON.stringify(formatted, null, 2);
+                overlay.classList.add('active');
+            } catch (e) {
+                showToast('Error loading run details: ' + (e.message || e), 'error');
+            }
+        }
+
+        function closeRunDetailsModal() {
+            const overlay = document.getElementById('runDetailsModalOverlay');
+            overlay.classList.remove('active');
         }
 
         // Tab switching with URL hash routing
@@ -3166,6 +3301,26 @@
 
         const cronRunsPagination = { offset: 0, limit: 50, total: 0 };
 
+        // Format date to readable format: "7:35PM, 8 Dec 2025"
+        function formatReadableDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Invalid Date';
+            
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const displayMinutes = minutes.toString().padStart(2, '0');
+            
+            const day = date.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${displayHours}:${displayMinutes}${ampm}, ${day} ${month} ${year}`;
+        }
+
         async function loadCronJobs() {
             const tbody = document.getElementById('cron-jobs-tbody');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
@@ -3202,16 +3357,21 @@
                     
                     return `
                         <tr data-job-id="${job.id}">
-                            <td><strong>${job.name}</strong><br><small style="color: var(--text-muted);">${job.description || ''}</small></td>
+                            <td>
+                                <strong>${job.name}</strong>
+                                ${job.description ? `<span style="margin-left: 0.5rem; cursor: help; color: var(--text-muted);" title="${job.description}">ℹ️</span>` : ''}
+                            </td>
                             <td>${job.schedule}</td>
                             <td>${statusBadge}</td>
-                            <td>${job.last_run ? new Date(job.last_run).toLocaleString() : 'Never'}</td>
-                            <td>${job.next_run ? new Date(job.next_run).toLocaleString() : 'N/A'}</td>
+                            <td>${job.last_run ? formatReadableDate(job.last_run) : 'Never'}</td>
+                            <td>${job.next_run ? formatReadableDate(job.next_run) : 'N/A'}</td>
                             <td>${job.total_runs}</td>
                             <td><span style="color: ${successColor};">${job.success_rate}%</span><br><small>${job.successful_runs}/${job.total_runs}</small></td>
-                            <td class="actions sticky-actions">
-                                <button class="btn-edit" onclick="triggerCronJob(${job.id}, '${job.name}')" title="▶️ Run Now - Manually trigger this job immediately">▶️ Run</button>
-                                <button class="btn-edit" onclick="toggleCronJob(${job.id})" title="${job.is_active ? '⏸️ Pause - Disable automatic scheduling' : '▶️ Resume - Enable automatic scheduling'}">${job.is_active ? '⏸️ Pause' : '▶️ Resume'}</button>
+                            <td class="actions sticky-actions" style="vertical-align: middle; text-align: center;">
+                                <div style="display: inline-flex; gap: 0.5rem; align-items: center; justify-content: center; vertical-align: middle;">
+                                    <button class="btn-edit" onclick="triggerCronJob(${job.id}, '${job.name}')" title="▶️ Run Now - Manually trigger this job immediately">▶️ Run</button>
+                                    <button class="btn-edit" onclick="toggleCronJob(${job.id})" title="${job.is_active ? '⏸️ Pause - Disable automatic scheduling' : '▶️ Resume - Enable automatic scheduling'}">${job.is_active ? '⏸️ Pause' : '▶️ Resume'}</button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -3223,7 +3383,7 @@
 
         async function loadCronRuns() {
             const tbody = document.getElementById('cron-runs-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
             
             // Cleanup stuck jobs first
             try {
@@ -3247,7 +3407,7 @@
                 let runs = data.runs;
                 
                 if (runs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No runs found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No runs found</td></tr>';
                     updateCronRunsPaginationUI(pag);
                     return;
                 }
@@ -3281,7 +3441,6 @@
                         duration = `${Math.floor(elapsed / 60)}m ${elapsed % 60}s (running)`;
                     }
                     
-                    const details = run.details ? JSON.stringify(run.details, null, 2).substring(0, 100) + '...' : '-';
                     const rowStyle = (run.status === 'running' && !isStuck) ? 'background: rgba(255, 193, 7, 0.1); font-weight: 500;' : 
                                     isStuck ? 'background: rgba(255, 0, 0, 0.1); font-weight: 500;' : '';
                     
@@ -3294,13 +3453,15 @@
                         <tr style="${rowStyle}">
                             <td><strong>${run.job_name}</strong>${(run.status === 'running' && !isStuck) ? ' <span style="color: var(--accent-yellow);">⏳</span>' : ''}${isStuck ? ' <span style="color: var(--accent-red);">⚠️ STUCK</span>' : ''}</td>
                             <td><span style="color: ${triggerColor}; font-weight: 500;">${triggerIcon} ${triggerText}</span></td>
-                            <td>${new Date(run.started_at).toLocaleString()}</td>
+                            <td>${formatReadableDate(run.started_at)}</td>
                             <td>${duration}</td>
                             <td><span style="color: ${statusColor}; font-weight: ${(run.status === 'running' && !isStuck) ? 'bold' : 'normal'};">${statusDisplay}</span></td>
                             <td>${run.items_updated || 0}</td>
-                            <td><small style="color: var(--text-muted); font-family: monospace;">${details}</small></td>
-                            <td>
-                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                            <td style="text-align: center;">
+                                ${run.details ? `<button class="btn-view-details" onclick="viewRunDetails(${run.id})" title="View Full Details">👁️ View</button>` : '-'}
+                            </td>
+                            <td style="vertical-align: middle;">
+                                <div style="display: inline-flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; vertical-align: middle;">
                                     ${(run.status === 'running' && !isStuck) ? `
                                         <button class="btn-edit" onclick="startWatchingLogs(${run.id}, '${run.job_name}')" title="📋 View Live Logs">📋 Logs</button>
                                         <button class="btn-delete" onclick="stopCronRun(${run.id})" title="⏹️ Stop Running Job">⏹️ Stop</button>
@@ -3310,7 +3471,7 @@
                                     ${isStuck ? `<button class="btn-delete" onclick="stopCronRun(${run.id})" title="⏹️ Force Stop Stuck Job">⏹️ Force Stop</button>` : ''}
                                     <button class="btn-delete" onclick="deleteCronRun(${run.id})" title="🗑️ Delete This Run">🗑️</button>
                                 </div>
-                                ${run.error_message || isStuck ? `<div style="color: var(--accent-red); font-size: 0.75rem; line-height: 1.4;">${run.error_message || 'Job appears to be stuck (running for over 1 hour)'}</div>` : ''}
+                                ${run.error_message || isStuck ? `<div style="color: var(--accent-red); font-size: 0.75rem; line-height: 1.4; margin-top: 0.5rem; white-space: normal;">${run.error_message || 'Job appears to be stuck (running for over 1 hour)'}</div>` : ''}
                             </td>
                         </tr>
                     `;
@@ -3325,7 +3486,7 @@
                 
                 updateCronRunsPaginationUI(pag);
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
             }
         }
 

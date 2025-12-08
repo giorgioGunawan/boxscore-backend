@@ -307,6 +307,7 @@ async def get_cron_run_logs(
         return {
             "id": run.id,
             "job_name": run.job_name,
+            "triggered_by": getattr(run, 'triggered_by', 'cron'),
             "status": "stuck" if is_stuck else run.status,
             "started_at": safe_isoformat(run.started_at),
             "completed_at": safe_isoformat(run.completed_at),
