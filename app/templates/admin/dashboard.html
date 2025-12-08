@@ -2189,10 +2189,9 @@
 
         // Helper to format date/time in user's local timezone
         function formatLocalDate(dateStr, timeStr) {
-            // Assume times from API are in EST/ET (NBA standard)
-            // Create date in EST then convert to local
-            const estDateStr = `${dateStr}T${timeStr || '00:00'}:00`;
-            const date = new Date(estDateStr + '-05:00'); // EST is UTC-5
+            // API returns UTC times - parse as UTC and convert to local
+            const utcDateStr = `${dateStr}T${timeStr || '00:00'}:00Z`; // Z indicates UTC
+            const date = new Date(utcDateStr); // JavaScript Date parses UTC and converts to local automatically
             
             return {
                 date: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),

@@ -87,29 +87,29 @@ class GameService:
                 # Continue with whatever games we have in DB
         
         response = []
-        # Convert UTC back to Eastern Time for display
-        eastern = zoneinfo.ZoneInfo("America/New_York")
         
         for game in games:
             is_home = game.home_team_id == team_id
             opponent = game.away_team if is_home else game.home_team
             
-            # Convert UTC to Eastern Time
+            # Return UTC times - widgets will handle localization
             if game.start_time_utc:
-                # Make UTC timezone-aware, convert to Eastern, then format
+                # Format as UTC
                 utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
-                eastern_time = utc_time.astimezone(eastern)
-                game_date = eastern_time.strftime("%Y-%m-%d")
-                game_time = eastern_time.strftime("%H:%M")
+                game_date = utc_time.strftime("%Y-%m-%d")
+                game_time = utc_time.strftime("%H:%M")
+                datetime_utc = utc_time.isoformat() + "+00:00"
             else:
                 game_date = None
                 game_time = None
+                datetime_utc = None
             
             response.append({
                 "game_id": game.id,
                 "nba_game_id": game.nba_game_id,
                 "date": game_date,
                 "time": game_time,
+                "datetime_utc": datetime_utc,
                 "opponent": opponent.abbreviation if opponent else "TBD",
                 "opponent_name": opponent.name if opponent else "TBD",
                 "is_home": is_home,
@@ -188,8 +188,6 @@ class GameService:
                 # Continue with whatever games we have in DB
         
         response = []
-        # Convert UTC back to Eastern Time for display
-        eastern = zoneinfo.ZoneInfo("America/New_York")
         
         for game in games:
             is_home = game.home_team_id == team_id
@@ -201,18 +199,20 @@ class GameService:
             if team_score is not None and opponent_score is not None:
                 result_str = "W" if team_score > opponent_score else "L"
             
-            # Convert UTC to Eastern Time
+            # Return UTC times - widgets will handle localization
             if game.start_time_utc:
                 utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
-                eastern_time = utc_time.astimezone(eastern)
-                game_date = eastern_time.strftime("%Y-%m-%d")
+                game_date = utc_time.strftime("%Y-%m-%d")
+                datetime_utc = utc_time.isoformat() + "+00:00"
             else:
                 game_date = None
+                datetime_utc = None
             
             response.append({
                 "game_id": game.id,
                 "nba_game_id": game.nba_game_id,
                 "date": game_date,
+                "datetime_utc": datetime_utc,
                 "opponent": opponent.abbreviation if opponent else "???",
                 "opponent_name": opponent.name if opponent else "???",
                 "is_home": is_home,
@@ -410,25 +410,30 @@ class GameService:
             home_team_id = team.id if is_home else opponent_id
             away_team_id = opponent_id if is_home else team.id
             
-            # Parse game date and time - NBA API returns times in Eastern Time
+            # Parse game date and time - NBA API's gameTimeEst has 'Z' suffix indicating UTC
             try:
                 from datetime import timezone
-                import zoneinfo
                 
-                game_date_str = game_data["game_date"]
-                game_time_str = game_data.get("game_time", "00:00")
-                
-                # Parse as Eastern Time
-                eastern = zoneinfo.ZoneInfo("America/New_York")
-                if game_time_str and game_time_str != "00:00":
-                    game_datetime_et = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                # If we have the full UTC datetime string from API, use it directly
+                if game_data.get("game_datetime_utc"):
+                    # Parse ISO format: "2025-12-08T19:30:00Z"
+                    game_datetime_str = game_data["game_datetime_utc"]
+                    if game_datetime_str.endswith('Z'):
+                        game_datetime_str = game_datetime_str[:-1] + '+00:00'
+                    game_datetime = datetime.fromisoformat(game_datetime_str).replace(tzinfo=None)  # Store as naive UTC
                 else:
-                    game_datetime_et = datetime.strptime(game_date_str, "%Y-%m-%d")
-                
-                # Make it timezone-aware (Eastern) then convert to UTC
-                game_datetime_et = game_datetime_et.replace(tzinfo=eastern)
-                game_datetime = game_datetime_et.astimezone(timezone.utc).replace(tzinfo=None)  # Store as naive UTC
-            except (ValueError, TypeError):
+                    # Fallback: parse date/time separately (shouldn't happen with new API format)
+                    game_date_str = game_data["game_date"]
+                    game_time_str = game_data.get("game_time", "00:00")
+                    
+                    if game_time_str and game_time_str != "00:00":
+                        # Parse as UTC (gameTimeEst with Z is UTC, not Eastern)
+                        game_datetime = datetime.strptime(f"{game_date_str} {game_time_str}", "%Y-%m-%d %H:%M")
+                        # No timezone conversion needed - already UTC
+                    else:
+                        game_datetime = datetime.strptime(game_date_str, "%Y-%m-%d")
+            except (ValueError, TypeError) as e:
+                print(f"Error parsing game datetime: {e}, game_data: {game_data}")
                 continue
             
             status = game_data.get("status", "scheduled")
@@ -450,6 +455,7 @@ class GameService:
             if game:
                 # Update existing game
                 game.status = status
+                game.start_time_utc = game_datetime  # Update time with correct UTC from API
                 if home_score is not None:
                     game.home_score = home_score
                 if away_score is not None:

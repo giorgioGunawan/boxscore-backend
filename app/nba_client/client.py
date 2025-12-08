@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from typing import Optional
 from functools import wraps
+import pandas as pd
 
 from nba_api.stats.static import teams as nba_teams, players as nba_players
 from nba_api.stats.endpoints import (
@@ -178,8 +179,31 @@ class NBAClient:
             opponent_abbr = row['awayTeam_teamTricode'] if is_home else row['homeTeam_teamTricode']
             
             # Parse date and time
-            game_date = str(row['gameDateEst']).split('T')[0] if row['gameDateEst'] else ""
-            game_time = str(row['gameTimeEst']).split('T')[1].replace('Z', '')[:5] if row['gameTimeEst'] else ""
+            # NBA API provides gameDateTimeUTC directly - use that!
+            # gameDateTimeUTC is the correct UTC datetime (e.g., "2025-12-09T00:00:00Z")
+            # This is the authoritative source - don't use gameTimeEst which is Eastern Time!
+            game_datetime_utc_str = None
+            if 'gameDateTimeUTC' in row and pd.notna(row.get('gameDateTimeUTC')):
+                game_datetime_utc_str = str(row['gameDateTimeUTC'])
+            
+            # Extract date and time portions from UTC datetime
+            if game_datetime_utc_str:
+                game_datetime_utc = game_datetime_utc_str
+                # Parse: "2025-12-09T00:00:00Z" -> date="2025-12-09", time="00:00"
+                if 'T' in game_datetime_utc_str:
+                    date_part, time_part = game_datetime_utc_str.split('T')
+                    game_date = date_part
+                    # Extract HH:MM from time part (remove Z, +00:00, etc.)
+                    time_clean = time_part.replace('Z', '').replace('+00:00', '').split('.')[0]
+                    game_time = time_clean[:5] if len(time_clean) >= 5 else time_clean
+                else:
+                    game_date = ""
+                    game_time = ""
+            else:
+                # Fallback: shouldn't happen, but handle gracefully
+                game_date = str(row['gameDateEst']).split('T')[0] if pd.notna(row.get('gameDateEst')) else ""
+                game_time = ""
+                game_datetime_utc = None
             
             # Determine status: 1=scheduled, 2=in_progress, 3=final
             status_id = row.get('gameStatus', 1)
@@ -194,6 +218,7 @@ class NBAClient:
                 "nba_game_id": row['gameId'],
                 "game_date": game_date,
                 "game_time": game_time,
+                "game_datetime_utc": game_datetime_utc,  # Full UTC datetime string from API
                 "is_home": is_home,
                 "opponent_nba_id": opponent_id,
                 "opponent_abbr": opponent_abbr,

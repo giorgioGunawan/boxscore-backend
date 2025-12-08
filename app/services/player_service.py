@@ -552,14 +552,14 @@ async def _build_latest_game_response(db: AsyncSession, player: Player, game_sta
         opponent = game.away_team
         is_home = True
     
-    # Convert UTC to Eastern Time for display
-    eastern = zoneinfo.ZoneInfo("America/New_York")
+    # Return UTC times - widgets will handle localization
     if game.start_time_utc:
         utc_time = game.start_time_utc.replace(tzinfo=timezone.utc)
-        eastern_time = utc_time.astimezone(eastern)
-        game_date = eastern_time.strftime("%d %b %Y")
+        game_date = utc_time.strftime("%d %b %Y")
+        datetime_utc = utc_time.isoformat() + "+00:00"
     else:
         game_date = None
+        datetime_utc = None
     
     return {
         "player_id": player.id,
@@ -567,6 +567,7 @@ async def _build_latest_game_response(db: AsyncSession, player: Player, game_sta
         "jersey_number": player.jersey_number,
         "season": game.season,
         "game_date": game_date,
+        "datetime_utc": datetime_utc,
         "opponent": opponent.abbreviation if opponent else "???",
         "is_home": is_home,
         "pts": game_stats.pts,
