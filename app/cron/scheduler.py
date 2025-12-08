@@ -73,7 +73,23 @@ async def run_job_now(job_name: str, job_func, *args, **kwargs):
                     run2.duration_seconds = None
                 run2.status = result_data.get("status", "success")
                 run2.items_updated = result_data.get("items_updated", 0)
-                run2.details = result_data.get("details", {})
+                
+                # Merge details to preserve logs from update_run_progress
+                existing_details = run2.details or {}
+                new_details = result_data.get("details", {})
+                # Merge: keep existing logs if they exist, otherwise use new logs
+                merged_details = {**existing_details, **new_details}
+                if "logs" in existing_details and "logs" in new_details:
+                    # If both have logs, prefer existing (which has all the real-time logs)
+                    merged_details["logs"] = existing_details["logs"]
+                elif "logs" in existing_details:
+                    # Keep existing logs
+                    merged_details["logs"] = existing_details["logs"]
+                elif "logs" in new_details:
+                    # Use new logs if no existing logs
+                    merged_details["logs"] = new_details["logs"]
+                
+                run2.details = merged_details
                 
                 if run2.status == "failed":
                     run2.error_message = result_data.get("error", "Unknown error")
@@ -239,7 +255,23 @@ async def run_cron_job(job_name: str, job_func, *args, **kwargs):
                     run2.duration_seconds = int((run2.completed_at - run2.started_at).total_seconds())
                     run2.status = result_data.get("status", "success")
                     run2.items_updated = result_data.get("items_updated", 0)
-                    run2.details = result_data.get("details", {})
+                    
+                    # Merge details to preserve logs from update_run_progress
+                    existing_details = run2.details or {}
+                    new_details = result_data.get("details", {})
+                    # Merge: keep existing logs if they exist, otherwise use new logs
+                    merged_details = {**existing_details, **new_details}
+                    if "logs" in existing_details and "logs" in new_details:
+                        # If both have logs, prefer existing (which has all the real-time logs)
+                        merged_details["logs"] = existing_details["logs"]
+                    elif "logs" in existing_details:
+                        # Keep existing logs
+                        merged_details["logs"] = existing_details["logs"]
+                    elif "logs" in new_details:
+                        # Use new logs if no existing logs
+                        merged_details["logs"] = new_details["logs"]
+                    
+                    run2.details = merged_details
                     
                     if run2.status == "failed":
                         run2.error_message = result_data.get("error", "Unknown error")

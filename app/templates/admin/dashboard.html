@@ -731,6 +731,77 @@
             padding: 0.75rem;
             border-bottom: 1px solid var(--border);
             color: var(--text-secondary);
+            vertical-align: top;
+        }
+        
+        /* Fix action column alignment */
+        .cms-table td.actions,
+        .cms-table td.sticky-actions {
+            vertical-align: top;
+            padding: 0.75rem;
+            min-width: 200px;
+        }
+        
+        .cms-table td.actions > div:first-child,
+        .cms-table td.sticky-actions > div:first-child {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cms-table td.actions .btn-edit,
+        .cms-table td.actions .btn-delete,
+        .cms-table td.sticky-actions .btn-edit,
+        .cms-table td.sticky-actions .btn-delete {
+            margin: 0;
+            flex-shrink: 0;
+        }
+        
+        /* Ensure all table cells have consistent alignment */
+        #cron-jobs-table td,
+        #cron-runs-table td {
+            vertical-align: middle;
+        }
+        
+        #cron-runs-table td:last-child {
+            vertical-align: top;
+            padding: 0.75rem;
+        }
+        
+        /* Ensure action column header has same styling */
+        #cron-runs-table th.actions-header,
+        #cron-jobs-table th.sticky-actions {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        /* Fix action column cell alignment */
+        #cron-runs-table td:last-child {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-start;
+            min-width: 250px;
+        }
+        
+        #cron-runs-table td:last-child > div:first-child {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            width: 100%;
+        }
+        
+        #cron-runs-table td:last-child .btn-edit,
+        #cron-runs-table td:last-child .btn-delete {
+            flex-shrink: 0;
         }
 
         .cms-table tr:hover td {
@@ -1218,15 +1289,147 @@
         <div class="tab-content" id="tab-data-management">
             <!-- Sub-tabs for different data types -->
             <div class="cms-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <button class="cms-tab active" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
-                <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
-                <button class="cms-tab" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Game Stats</button>
+                <button class="cms-tab active" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Player Game Stats</button>
                 <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">🏀 Games</button>
+                <button class="cms-tab" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
+                <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
                 <button class="cms-tab" data-cms="standings" onclick="switchCmsTab('standings')">📈 Standings</button>
             </div>
 
+            <!-- Player Game Stats CMS -->
+            <div class="cms-content active" id="cms-game-stats">
+                <div class="api-tester">
+                    <h3>🎯 Player Game Stats (Last Results)</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="game-stats-search-input" placeholder="Search by player name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsGameStats()">
+                        <select id="game-stats-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="action-btn small" onclick="loadCmsGameStats()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddGameStatsForm()">➕ Add Game Stats</button>
+                    </div>
+                    <div id="game-stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="game-stats-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="game-stats-prev" onclick="loadCmsGameStatsPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="game-stats-next" onclick="loadCmsGameStatsPage(1)" disabled>Next →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Game Stats Form -->
+                    <div id="add-game-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game Stats</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <input type="number" id="new-game-stats-player-id" placeholder="Player ID" style="width: 100px;">
+                            <input type="number" id="new-game-stats-game-id" placeholder="Game ID" style="width: 100px;">
+                            <input type="number" id="new-game-stats-pts" placeholder="PTS" style="width: 70px;">
+                            <input type="number" id="new-game-stats-reb" placeholder="REB" style="width: 70px;">
+                            <input type="number" id="new-game-stats-ast" placeholder="AST" style="width: 70px;">
+                            <input type="number" id="new-game-stats-stl" placeholder="STL" style="width: 70px;">
+                            <input type="number" id="new-game-stats-blk" placeholder="BLK" style="width: 70px;">
+                            <input type="text" id="new-game-stats-minutes" placeholder="MIN (e.g., 34:22)" style="width: 100px;">
+                            <button class="action-btn small" onclick="addGameStats()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddGameStatsForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="cms-table" id="game-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Player</th>
+                                    <th>Game</th>
+                                    <th>PTS</th>
+                                    <th>REB</th>
+                                    <th>AST</th>
+                                    <th>STL</th>
+                                    <th>BLK</th>
+                                    <th>MIN</th>
+                                    <th>Last Sync</th>
+                                    <th class="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="game-stats-tbody">
+                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Games CMS -->
+            <div class="cms-content" id="cms-games">
+                <div class="api-tester">
+                    <h3>🏀 Games</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+                        <select id="games-filter-team" style="width: 150px;">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="games-filter-status" style="width: 120px;">
+                            <option value="">All Status</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="live">Live</option>
+                            <option value="final">Final</option>
+                        </select>
+                        <button class="action-btn small" onclick="loadCmsGames()">🔄 Refresh</button>
+                        <button class="action-btn small" onclick="showAddGameForm()">➕ Add Game</button>
+                    </div>
+                    <div id="games-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <span id="games-pagination-info">Loading...</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>← Prev</button>
+                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Game Form -->
+                    <div id="add-game-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game</h4>
+                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <input type="text" id="new-game-nba-game-id" placeholder="NBA Game ID" style="width: 150px;">
+                            <input type="number" id="new-game-home-team-id" placeholder="Home Team ID" style="width: 120px;">
+                            <input type="number" id="new-game-away-team-id" placeholder="Away Team ID" style="width: 120px;">
+                            <input type="datetime-local" id="new-game-start-time" placeholder="Start Time" style="width: 200px;">
+                            <input type="text" id="new-game-status" placeholder="Status (scheduled/live/final)" style="width: 120px;">
+                            <input type="number" id="new-game-home-score" placeholder="Home Score" style="width: 100px;">
+                            <input type="number" id="new-game-away-score" placeholder="Away Score" style="width: 100px;">
+                            <button class="action-btn small" onclick="addGame()">💾 Save</button>
+                            <button class="action-btn small" onclick="hideAddGameForm()" style="background: var(--bg-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="cms-table" id="games-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NBA Game ID</th>
+                                    <th>Home</th>
+                                    <th>Away</th>
+                                    <th>Start Time</th>
+                                    <th>Status</th>
+                                    <th>Score</th>
+                                    <th>Last Sync</th>
+                                    <th class="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="games-tbody">
+                                <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Players CMS -->
-            <div class="cms-content active" id="cms-players">
+            <div class="cms-content" id="cms-players">
                 <div class="api-tester">
                     <h3>👤 Players</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
@@ -1344,71 +1547,6 @@
                             </thead>
                             <tbody id="stats-tbody">
                                 <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Player Game Stats CMS -->
-            <div class="cms-content" id="cms-game-stats">
-                <div class="api-tester">
-                    <h3>🎯 Player Game Stats (Last Results)</h3>
-                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="game-stats-search-input" placeholder="Search by player name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsGameStats()">
-                        <select id="game-stats-filter-team" style="width: 150px;">
-                            <option value="">All Teams</option>
-                            {% for team in teams %}
-                            <option value="{{ team.id }}">{{ team.abbreviation }}</option>
-                            {% endfor %}
-                        </select>
-                        <button class="action-btn small" onclick="loadCmsGameStats()">🔄 Refresh</button>
-                        <button class="action-btn small" onclick="showAddGameStatsForm()">➕ Add Game Stats</button>
-                    </div>
-                    <div id="game-stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
-                        <span id="game-stats-pagination-info">Loading...</span>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="game-stats-prev" onclick="loadCmsGameStatsPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="game-stats-next" onclick="loadCmsGameStatsPage(1)" disabled>Next →</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Add Game Stats Form -->
-                    <div id="add-game-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game Stats</h4>
-                        <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
-                            <input type="number" id="new-game-stats-player-id" placeholder="Player ID" style="width: 100px;">
-                            <input type="number" id="new-game-stats-game-id" placeholder="Game ID" style="width: 100px;">
-                            <input type="number" id="new-game-stats-pts" placeholder="PTS" style="width: 70px;">
-                            <input type="number" id="new-game-stats-reb" placeholder="REB" style="width: 70px;">
-                            <input type="number" id="new-game-stats-ast" placeholder="AST" style="width: 70px;">
-                            <input type="number" id="new-game-stats-stl" placeholder="STL" style="width: 70px;">
-                            <input type="number" id="new-game-stats-blk" placeholder="BLK" style="width: 70px;">
-                            <input type="text" id="new-game-stats-minutes" placeholder="MIN (e.g., 34:22)" style="width: 100px;">
-                            <button class="action-btn small" onclick="addGameStats()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddGameStatsForm()" style="background: var(--bg-hover);">Cancel</button>
-                        </div>
-                    </div>
-                    
-                    <div class="cms-table-container">
-                        <table class="cms-table" id="game-stats-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Player</th>
-                                    <th>Game</th>
-                                    <th>Date</th>
-                                    <th>PTS</th>
-                                    <th>REB</th>
-                                    <th>AST</th>
-                                    <th>STL</th>
-                                    <th>BLK</th>
-                                    <th>MIN</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="game-stats-tbody">
-                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1627,7 +1765,7 @@
                                 <th>Status</th>
                                 <th>Items Updated</th>
                                 <th>Details</th>
-                                <th style="min-width: 250px;">Actions & Error</th>
+                                <th style="min-width: 250px;" class="actions-header">Actions & Error</th>
                             </tr>
                         </thead>
                         <tbody id="cron-runs-tbody">
@@ -1803,22 +1941,96 @@
             currentJobName = null;
         }
 
+        // Tab switching with URL hash routing
+        function switchTab(tabName, updateHash = true) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            const tab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+            const tabContent = document.getElementById('tab-' + tabName);
+            
+            if (tab && tabContent) {
+                tab.classList.add('active');
+                tabContent.classList.add('active');
+                
+                // Update URL hash
+                if (updateHash) {
+                    // If we're on data-management tab, preserve the CMS sub-tab
+                    if (tabName === 'data-management') {
+                        const activeCmsTab = document.querySelector('.cms-tab.active')?.dataset.cms;
+                        if (activeCmsTab) {
+                            window.location.hash = `${tabName}/${activeCmsTab}`;
+                        } else {
+                            window.location.hash = tabName;
+                        }
+                    } else {
+                        window.location.hash = tabName;
+                    }
+                }
+                
+                // Auto-load data for specific tabs
+                if (tabName === 'cron-management') {
+                    loadCronJobs();
+                    loadCronRuns();
+                }
+            }
+        }
+
+        // CMS tab switching with URL hash routing
+        function switchCmsTab(cmsName, updateHash = true) {
+            document.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.cms-content').forEach(c => c.classList.remove('active'));
+            
+            const tab = document.querySelector(`.cms-tab[data-cms="${cmsName}"]`);
+            const content = document.getElementById('cms-' + cmsName);
+            
+            if (tab && content) {
+                tab.classList.add('active');
+                content.classList.add('active');
+                
+                // Update URL hash
+                if (updateHash) {
+                    const mainTab = document.querySelector('.tab.active')?.dataset.tab || 'data-management';
+                    window.location.hash = `${mainTab}/${cmsName}`;
+                }
+                
+                // Load data for the tab
+                if (cmsName === 'players') loadCmsPlayers();
+                if (cmsName === 'stats') loadCmsStats();
+                if (cmsName === 'games') loadCmsGames();
+                if (cmsName === 'game-stats') loadCmsGameStats();
+                if (cmsName === 'standings') loadCmsStandings();
+            }
+        }
+
+        // Initialize tabs from URL hash on page load
+        function initializeTabsFromHash() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                const parts = hash.split('/');
+                const mainTab = parts[0];
+                const cmsTab = parts[1];
+                
+                if (mainTab) {
+                    switchTab(mainTab, false);
+                    
+                    if (cmsTab && mainTab === 'data-management') {
+                        setTimeout(() => switchCmsTab(cmsTab, false), 100);
+                    }
+                }
+            }
+        }
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', initializeTabsFromHash);
+
+        // Initialize on page load
+        initializeTabsFromHash();
+
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                const tabContent = document.getElementById('tab-' + tab.dataset.tab);
-                if (tabContent) {
-                    tabContent.classList.add('active');
-                    
-                    // Auto-load data for specific tabs
-                    if (tab.dataset.tab === 'cron-management') {
-                        loadCronJobs();
-                        loadCronRuns();
-                    }
-                }
+                switchTab(tab.dataset.tab);
             });
         });
 
@@ -2363,19 +2575,6 @@
             gameStats: { offset: 0, limit: 100, total: 0 },
         };
 
-        function switchCmsTab(tabName) {
-            document.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.cms-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`.cms-tab[data-cms="${tabName}"]`).classList.add('active');
-            document.getElementById(`cms-${tabName}`).classList.add('active');
-            
-            // Load data for the tab
-            if (tabName === 'players') loadCmsPlayers();
-            if (tabName === 'stats') loadCmsStats();
-            if (tabName === 'games') loadCmsGames();
-            if (tabName === 'game-stats') loadCmsGameStats();
-            if (tabName === 'standings') loadCmsStandings();
-        }
 
         // Show/hide forms
         function showAddPlayerForm() { document.getElementById('add-player-form').style.display = 'block'; }
@@ -3212,9 +3411,12 @@
             // Scroll to logs section
             document.getElementById('running-job-logs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             
-            // Start polling for logs
+            // Load logs immediately
             refreshRunningJobLogs();
+            
+            // Only start polling if job is still running (will be checked in refreshRunningJobLogs)
             if (logWatchInterval) clearInterval(logWatchInterval);
+            // Start polling - refreshRunningJobLogs will stop it if job is completed
             logWatchInterval = setInterval(refreshRunningJobLogs, 2000); // Poll every 2 seconds
         }
 
@@ -3243,23 +3445,28 @@
                 } else {
                     logText += `Completed: ${data.completed_at ? new Date(data.completed_at).toLocaleString() : 'N/A'}\n`;
                     logText += `Duration: ${data.duration_seconds || 0}s\n`;
-                    logText += `Items Updated: ${data.items_updated || 0}\n\n`;
+                    logText += `Items Updated: ${data.items_updated || 0}\n`;
+                    if (data.error_message) {
+                        logText += `Error: ${data.error_message}\n`;
+                    }
+                    logText += `\n`;
                     
-                    // Stop watching if job completed
-                    stopWatchingLogs();
+                    // Stop polling if job completed, but keep logs visible
+                    if (logWatchInterval) {
+                        clearInterval(logWatchInterval);
+                        logWatchInterval = null;
+                    }
                 }
                 
                 // Display logs from details.logs array if available
                 if (data.details && data.details.logs && Array.isArray(data.details.logs)) {
-                    logText += `\n📋 Live Logs:\n`;
+                    logText += `\n📋 ${data.is_running ? 'Live' : 'Completed'} Logs:\n`;
                     logText += `${data.details.logs.join('\n')}\n\n`;
-                } else if (data.details) {
-                    // Fallback to JSON if logs array not available
+                } else if (!data.is_running) {
+                    logText += `\n📋 No logs available for this run.\n`;
+                } else if (data.details && data.is_running) {
+                    // Fallback to JSON if logs array not available (for running jobs)
                     logText += `\nDetails:\n${JSON.stringify(data.details, null, 2)}\n\n`;
-                }
-                
-                if (data.error_message) {
-                    logText += `\n❌ Error: ${data.error_message}\n`;
                 }
                 
                 logContent.textContent = logText;
