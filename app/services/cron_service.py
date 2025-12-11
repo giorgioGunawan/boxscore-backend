@@ -1125,3 +1125,190 @@ class CronService:
                     "details": details
                 }
 
+    @staticmethod
+    async def update_players_team(
+        run_id: int,
+        cancellation_token: Optional[Any] = None,
+        batch_size: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Update all players' team assignments from NBA API.
+        Useful during transfer windows when players change teams.
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "players_updated": 0,
+            "players_unchanged": 0,
+            "players_errors": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        # Create our own database session
+        async with AsyncSessionLocal() as db:
+            try:
+                # Check for cancellation before starting
+                if cancellation_token:
+                    cancellation_token.check()
+                
+                details["logs"].append(f"🔍 Starting update_players_team job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                # Get all players from database
+                result = await db.execute(select(Player))
+                all_players = result.scalars().all()
+                
+                details["logs"].append(f"📊 Found {len(all_players)} players in database")
+                details["logs"].append(f"📦 Processing in batches of {batch_size}")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                if not all_players:
+                    details["logs"].append("⚠️ No players found in database")
+                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                    details["duration_seconds"] = duration
+                    return {
+                        "status": "success",
+                        "items_updated": 0,
+                        "details": details
+                    }
+                
+                details["logs"].append("")
+                details["logs"].append(f"👤 Processing {len(all_players)} players:")
+                
+                # Process players in batches
+                total_batches = (len(all_players) + batch_size - 1) // batch_size
+                
+                for batch_idx in range(0, len(all_players), batch_size):
+                    batch_players = all_players[batch_idx:batch_idx + batch_size]
+                    current_batch = (batch_idx // batch_size) + 1
+                    
+                    details["logs"].append("")
+                    details["logs"].append(f"📦 Batch {current_batch}/{total_batches} ({len(batch_players)} players):")
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
+                    
+                    for idx, player in enumerate(batch_players, 1):
+                        # Check for cancellation
+                        if cancellation_token:
+                            cancellation_token.check()
+                        
+                        try:
+                            global_idx = batch_idx + idx
+                            
+                            # Fetch player info from NBA API
+                            loop = asyncio.get_event_loop()
+                            player_info = await loop.run_in_executor(
+                                None, 
+                                NBAClient.get_player_info, 
+                                player.nba_player_id
+                            )
+                            
+                            if not player_info:
+                                details["logs"].append(f"   [{global_idx}/{len(all_players)}] ⚠️ {player.full_name}: No info from NBA API")
+                                details["players_errors"] += 1
+                                continue
+                            
+                            # Get the team ID from NBA API
+                            nba_team_id = player_info.get("team_id")
+                            
+                            if not nba_team_id:
+                                # Player might be a free agent or retired
+                                if player.team_id is not None:
+                                    # Player was on a team, now is not
+                                    old_team_result = await db.execute(
+                                        select(Team).where(Team.id == player.team_id)
+                                    )
+                                    old_team = old_team_result.scalar_one_or_none()
+                                    old_team_abbr = old_team.abbreviation if old_team else "???"
+                                    
+                                    player.team_id = None
+                                    player.last_api_sync = datetime.now(timezone.utc)
+                                    details["players_updated"] += 1
+                                    details["logs"].append(f"   [{global_idx}/{len(all_players)}] 🔄 {player.full_name}: {old_team_abbr} → Free Agent")
+                                else:
+                                    details["logs"].append(f"   [{global_idx}/{len(all_players)}] ✓ {player.full_name}: Free Agent (unchanged)")
+                                    details["players_unchanged"] += 1
+                                continue
+                            
+                            # Find the team in our database
+                            team_result = await db.execute(
+                                select(Team).where(Team.nba_team_id == nba_team_id)
+                            )
+                            team = team_result.scalar_one_or_none()
+                            
+                            if not team:
+                                details["logs"].append(f"   [{global_idx}/{len(all_players)}] ⚠️ {player.full_name}: Team {nba_team_id} not found in database")
+                                details["players_errors"] += 1
+                                continue
+                            
+                            # Check if team has changed
+                            if player.team_id != team.id:
+                                # Team changed!
+                                old_team_result = await db.execute(
+                                    select(Team).where(Team.id == player.team_id)
+                                )
+                                old_team = old_team_result.scalar_one_or_none()
+                                old_team_abbr = old_team.abbreviation if old_team else "Free Agent"
+                                
+                                player.team_id = team.id
+                                player.last_api_sync = datetime.now(timezone.utc)
+                                details["players_updated"] += 1
+                                details["logs"].append(f"   [{global_idx}/{len(all_players)}] ✅ {player.full_name}: {old_team_abbr} → {team.abbreviation}")
+                            else:
+                                # Team unchanged
+                                player.last_api_sync = datetime.now(timezone.utc)
+                                details["players_unchanged"] += 1
+                                # Only log every 10th unchanged player to reduce noise
+                                if details["players_unchanged"] % 10 == 0:
+                                    details["logs"].append(f"   [{global_idx}/{len(all_players)}] ✓ {player.full_name}: {team.abbreviation} (unchanged)")
+                            
+                            # Update progress every 5 players
+                            if idx % 5 == 0 or idx == len(batch_players):
+                                await update_run_progress(run_id, details, db_session=db)
+                                await db.commit()
+                            
+                        except Exception as e:
+                            error_msg = f"Error processing player {player.full_name}: {str(e)}"
+                            details["errors"].append(error_msg)
+                            details["logs"].append(f"   [{global_idx}/{len(all_players)}] ❌ {player.full_name}: {str(e)}")
+                            details["players_errors"] += 1
+                            continue
+                    
+                    # Commit after each batch
+                    await db.commit()
+                    details["logs"].append(f"   💾 Batch {current_batch} committed")
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
+                
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                details["duration_seconds"] = duration
+                
+                # Final summary
+                details["logs"].append("")
+                details["logs"].append(f"📊 SUMMARY:")
+                details["logs"].append(f"   Total players: {len(all_players)}")
+                details["logs"].append(f"   Players with team changes: {details['players_updated']}")
+                details["logs"].append(f"   Players unchanged: {details['players_unchanged']}")
+                details["logs"].append(f"   Errors: {details['players_errors']}")
+                details["logs"].append(f"   Duration: {duration:.2f} seconds")
+                
+                return {
+                    "status": "success",
+                    "items_updated": details["players_updated"],
+                    "details": details
+                }
+                
+            except asyncio.CancelledError as e:
+                # Context manager will auto-rollback on exception
+                raise  # Re-raise to be caught by scheduler
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                # Context manager will auto-rollback on exception
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }

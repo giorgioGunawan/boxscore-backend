@@ -329,6 +329,11 @@ async def update_schedules_job():
     await run_cron_job("update_schedules", CronService.update_schedules)
 
 
+async def update_players_team_job():
+    """Cron job: Update players' team assignments."""
+    await run_cron_job("update_players_team", CronService.update_players_team)
+
+
 async def initialize_cron_jobs():
     """Initialize cron job definitions in database."""
     async with AsyncSessionLocal() as db:
@@ -349,6 +354,12 @@ async def initialize_cron_jobs():
                 "name": "update_schedules",
                 "description": "Every 3 days: Check for schedule changes and update games table",
                 "schedule": "every 3 days",
+                "cron_expression": None,
+            },
+            {
+                "name": "update_players_team",
+                "description": "Every 7 days: Update all players' team assignments from NBA API",
+                "schedule": "every 7 days",
                 "cron_expression": None,
             },
         ]
@@ -406,6 +417,15 @@ def start_scheduler():
         trigger=IntervalTrigger(days=3),
         id="update_schedules",
         name="update_schedules",
+        replace_existing=True
+    )
+    
+    # Every 7 days: Update players' team assignments
+    scheduler.add_job(
+        update_players_team_job,
+        trigger=IntervalTrigger(days=7),
+        id="update_players_team",
+        name="update_players_team",
         replace_existing=True
     )
     
