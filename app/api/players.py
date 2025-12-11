@@ -141,3 +141,88 @@ async def get_player_latest_game(
         print(f"Error getting latest game for player {nba_player_id}: {e}")
         raise HTTPException(status_code=503, detail="NBA API temporarily unavailable, please try again")
 
+
+@router.get("/roster")
+async def get_player_roster(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all active NBA players with their current team relationships.
+    
+    Returns a complete roster of all players in the database with team information.
+    Designed for iOS widgets that need up-to-date player-team relationships.
+    
+    Response is cached for 1 hour to optimize performance.
+    
+    Example: /api/players/roster
+    """
+    from datetime import datetime
+    from sqlalchemy import select
+    from app.models.player import Player
+    from app.models.team import Team
+    from app.cache import cache_get, cache_set
+    from fastapi.responses import JSONResponse
+    
+    # Check cache first
+    cache_key = "player_roster_v1"
+    cached_data = await cache_get(cache_key)
+    if cached_data:
+        return JSONResponse(
+            content=cached_data,
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+    
+    try:
+        # Query all players with team relationships
+        query = (
+            select(
+                Player.nba_player_id,
+                Player.full_name,
+                Team.abbreviation,
+                Team.name,
+                Player.jersey_number,
+                Player.position
+            )
+            .join(Team, Player.team_id == Team.id)
+            .order_by(Player.full_name)
+        )
+        
+        result = await db.execute(query)
+        rows = result.all()
+        
+        # Build player list
+        players = []
+        for row in rows:
+            players.append({
+                "nba_player_id": row.nba_player_id,
+                "name": row.full_name,
+                "team_abbreviation": row.abbreviation,
+                "team_name": row.name,
+                "jersey_number": row.jersey_number if row.jersey_number else None,
+                "position": row.position if row.position else None
+            })
+        
+        # Build response
+        response_data = {
+            "season": settings.current_season,
+            "updated_at": datetime.utcnow().isoformat() + "Z",
+            "total_players": len(players),
+            "players": players
+        }
+        
+        # Cache for 1 hour (3600 seconds)
+        await cache_set(cache_key, response_data, ttl=3600)
+        
+        # Return with cache headers
+        return JSONResponse(
+            content=response_data,
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+        
+    except Exception as e:
+        print(f"Error fetching player roster: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch player roster"
+        )
+

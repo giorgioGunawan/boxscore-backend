@@ -100,6 +100,13 @@ def main():
         ["players"]
     ))
     
+    results.append(test_endpoint(
+        "Player Roster",
+        "/api/players/roster",
+        ["season", "updated_at", "total_players", "players"]
+    ))
+
+    
     # Summary
     print("\n" + "=" * 50)
     passed = sum(results)
