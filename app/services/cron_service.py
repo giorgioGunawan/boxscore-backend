@@ -1594,10 +1594,21 @@ class CronService:
                         nba_game_id = game_data["nba_game_id"]
                         res = await db.execute(select(Game).where(Game.nba_game_id == nba_game_id))
                         if not res.scalar_one_or_none():
+                            # Parse UTC string to datetime object for SQLite
+                            start_time_str = game_data["game_datetime_utc"]
+                            if start_time_str and isinstance(start_time_str, str):
+                                # Handle "Z" suffix if present
+                                if start_time_str.endswith("Z"):
+                                    start_time_str = start_time_str.replace("Z", "+00:00")
+                                start_time_dt = datetime.fromisoformat(start_time_str)
+                            else:
+                                start_time_dt = None
+
                             game = Game(
                                 nba_game_id=nba_game_id,
                                 season=settings.current_season,
-                                start_time_utc=game_data["game_datetime_utc"],
+                                season_type=settings.current_season_type,
+                                start_time_utc=start_time_dt,
                                 status="scheduled"
                             )
                             

@@ -39,5 +39,29 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        # Check for SQLite "not a database" error
+        is_sqlite_error = "sqlite" in str(e).lower() or "file is not a database" in str(e).lower()
+        if is_sqlite_error and "sqlite" in settings.database_url:
+            import os
+            import logging
+            
+            # Extract path from URL (e.g., sqlite+aiosqlite:////data/boxscore.db)
+            db_path = settings.database_url.split(":///")[-1]
+            if os.path.exists(db_path):
+                logging.error(f"Database corruption detected ({str(e)}). Deleting {db_path} and retrying...")
+                try:
+                    os.remove(db_path)
+                    # Retry init
+                    async with engine.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
+                    logging.info("Database recreated successfully.")
+                    return
+                except Exception as delete_error:
+                    logging.error(f"Failed to delete corrupted database: {delete_error}")
+        
+        # Re-raise if not handled
+        raise e
