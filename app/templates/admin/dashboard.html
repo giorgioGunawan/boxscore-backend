@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NBA Boxscore Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -37,7 +40,7 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
-            background-image: 
+            background-image:
                 radial-gradient(ellipse at 20% 0%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 100%, rgba(78, 205, 196, 0.06) 0%, transparent 50%);
         }
@@ -105,7 +108,9 @@
             flex-wrap: wrap;
         }
 
-        select, input[type="text"], input[type="number"] {
+        select,
+        input[type="text"],
+        input[type="number"] {
             padding: 0.75rem 1rem;
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -122,7 +127,8 @@
             min-width: 80px;
         }
 
-        select:focus, input:focus {
+        select:focus,
+        input:focus {
             outline: none;
             border-color: var(--accent-orange);
         }
@@ -177,8 +183,13 @@
             opacity: 1;
         }
 
-        .toast.success { border-color: var(--accent-green); }
-        .toast.error { border-color: var(--accent-red); }
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
 
         /* API Tester Section */
         .api-tester {
@@ -663,7 +674,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* CMS Styles */
@@ -733,7 +746,7 @@
             color: var(--text-secondary);
             vertical-align: middle;
         }
-        
+
         /* Fix action column alignment */
         .cms-table td.actions,
         .cms-table td.sticky-actions {
@@ -741,16 +754,16 @@
             padding: 0.75rem;
             min-width: 200px;
         }
-        
-        .cms-table td.actions > div:first-child,
-        .cms-table td.sticky-actions > div:first-child {
+
+        .cms-table td.actions>div:first-child,
+        .cms-table td.sticky-actions>div:first-child {
             display: inline-flex;
             gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
             vertical-align: middle;
         }
-        
+
         .cms-table td.actions .btn-edit,
         .cms-table td.actions .btn-delete,
         .cms-table td.sticky-actions .btn-edit,
@@ -759,7 +772,7 @@
             flex-shrink: 0;
             vertical-align: middle;
         }
-        
+
         /* Ensure action column header has same styling */
         #cron-runs-table th.actions-header,
         #cron-jobs-table th.sticky-actions {
@@ -771,14 +784,14 @@
             letter-spacing: 0.05em;
             border-bottom: 1px solid var(--border);
         }
-        
+
         /* CRON TABLES - Force consistent middle alignment for ALL cells */
         #cron-jobs-table td,
         #cron-runs-table td {
             vertical-align: middle !important;
             padding: 0.75rem !important;
         }
-        
+
         /* Action column cells - same middle alignment, ensure it works with multi-line cells */
         #cron-jobs-table td.sticky-actions,
         #cron-runs-table td:last-child {
@@ -786,10 +799,10 @@
             padding: 0.75rem !important;
             min-width: 250px;
         }
-        
+
         /* Button container - inline-flex to keep buttons on same baseline */
-        #cron-jobs-table td.sticky-actions > div,
-        #cron-runs-table td:last-child > div:first-child {
+        #cron-jobs-table td.sticky-actions>div,
+        #cron-runs-table td:last-child>div:first-child {
             display: inline-flex;
             gap: 0.5rem;
             flex-wrap: wrap;
@@ -797,15 +810,15 @@
             vertical-align: middle;
             line-height: 1.5;
         }
-        
+
         /* Error message - separate line below buttons, doesn't affect button alignment */
-        #cron-runs-table td:last-child > div:last-child:not(:first-child) {
+        #cron-runs-table td:last-child>div:last-child:not(:first-child) {
             display: block;
             margin-top: 0.5rem;
             white-space: normal;
             line-height: 1.4;
         }
-        
+
         /* Buttons - consistent inline-block alignment */
         #cron-jobs-table td.sticky-actions .btn-edit,
         #cron-jobs-table td.sticky-actions .btn-delete,
@@ -816,12 +829,12 @@
             margin: 0;
             line-height: 1.5;
         }
-        
+
         /* CRON JOBS TABLE - Specific fixes for action column alignment */
         #cron-jobs-table tbody tr {
             display: table-row;
         }
-        
+
         /* Force action column to align middle with other cells */
         #cron-jobs-table td.sticky-actions {
             display: table-cell !important;
@@ -830,9 +843,9 @@
             padding: 0.75rem !important;
             line-height: normal !important;
         }
-        
+
         /* Button container - center aligned */
-        #cron-jobs-table td.sticky-actions > div {
+        #cron-jobs-table td.sticky-actions>div {
             display: inline-flex !important;
             gap: 0.5rem !important;
             align-items: center !important;
@@ -842,7 +855,7 @@
             padding: 0 !important;
             line-height: 1.5 !important;
         }
-        
+
         /* Ensure buttons are properly aligned - same height as other cell content */
         #cron-jobs-table td.sticky-actions .btn-edit,
         #cron-jobs-table td.sticky-actions .btn-delete {
@@ -852,7 +865,7 @@
             line-height: 1.5 !important;
             height: auto !important;
         }
-        
+
         /* Match the line-height of other cells that have <br> tags */
         #cron-jobs-table td:first-child,
         #cron-jobs-table td:nth-child(7) {
@@ -921,10 +934,23 @@
         }
 
         @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            header { flex-direction: column; gap: 1rem; align-items: flex-start; }
-            .tabs { flex-wrap: wrap; }
-            .widgets-grid { grid-template-columns: 1fr; }
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Custom Modal Styles */
@@ -1013,8 +1039,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes slideUp {
@@ -1022,6 +1053,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -1103,6 +1135,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Custom Confirmation Modal -->
     <div id="customModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeCustomModal()">
@@ -1117,7 +1150,8 @@
     </div>
 
     <!-- Modal for triggering cron jobs with options -->
-    <div id="triggerCronModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeTriggerCronModal()">
+    <div id="triggerCronModalOverlay" class="custom-modal-overlay"
+        onclick="if(event.target === this) closeTriggerCronModal()">
         <div class="custom-modal" style="max-width: 600px;">
             <h3 id="triggerCronModalTitle">▶️ Trigger Cron Job</h3>
             <p id="triggerCronModalMessage">Configure options and confirm to run this job immediately.</p>
@@ -1126,17 +1160,20 @@
             </div>
             <div class="custom-modal-buttons">
                 <button class="btn-cancel" onclick="closeTriggerCronModal()">Cancel</button>
-                <button class="btn-confirm" id="triggerCronModalConfirm" onclick="confirmTriggerCronModal()">Run Now</button>
+                <button class="btn-confirm" id="triggerCronModalConfirm" onclick="confirmTriggerCronModal()">Run
+                    Now</button>
             </div>
         </div>
     </div>
 
     <!-- Modal for viewing cron run details -->
-    <div id="runDetailsModalOverlay" class="custom-modal-overlay" onclick="if(event.target === this) closeRunDetailsModal()">
+    <div id="runDetailsModalOverlay" class="custom-modal-overlay"
+        onclick="if(event.target === this) closeRunDetailsModal()">
         <div class="custom-modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
             <h3 id="runDetailsModalTitle">📋 Cron Run Details</h3>
             <div id="runDetailsModalContent" style="margin-bottom: 1.5rem;">
-                <pre id="runDetailsModalJson" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;"></pre>
+                <pre id="runDetailsModalJson"
+                    style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;"></pre>
             </div>
             <div class="custom-modal-buttons">
                 <button class="btn-cancel" onclick="closeRunDetailsModal()">Close</button>
@@ -1173,10 +1210,12 @@
                 <div class="input-group">
                     <select id="widget-team">
                         {% for team in teams %}
-                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}" {% if team.abbreviation == 'GSW' %}selected{% endif %}>{{ team.name }} ({{ team.abbreviation }})</option>
+                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}" {% if team.abbreviation=='GSW'
+                            %}selected{% endif %}>{{ team.name }} ({{ team.abbreviation }})</option>
                         {% endfor %}
                     </select>
-                    <input type="number" id="widget-player-id" value="201939" placeholder="NBA Player ID" style="width: 150px;">
+                    <input type="number" id="widget-player-id" value="201939" placeholder="NBA Player ID"
+                        style="width: 150px;">
                     <button class="action-btn small" onclick="loadAllWidgets()">
                         <span class="icon">🔄</span> Load Widgets
                     </button>
@@ -1282,7 +1321,8 @@
                     <select id="teams-team-select" style="display:none;">
                         <option value="">Select team...</option>
                         {% for team in teams %}
-                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}">{{ team.name }} ({{ team.abbreviation }})</option>
+                        <option value="{{ team.id }}" data-abbr="{{ team.abbreviation }}">{{ team.name }} ({{
+                            team.abbreviation }})</option>
                         {% endfor %}
                     </select>
                     <input type="text" id="teams-abbr-input" placeholder="e.g. GSW" style="display:none; width:100px;">
@@ -1315,8 +1355,10 @@
                         <option value="season-averages">Season Averages</option>
                         <option value="latest-game">Latest Game</option>
                     </select>
-                    <input type="text" id="players-search" placeholder="Search name (e.g. curry, lebron)..." style="width:220px;">
-                    <input type="number" id="players-nba-id" placeholder="NBA Player ID (e.g. 201939)" style="display:none; width:200px;">
+                    <input type="text" id="players-search" placeholder="Search name (e.g. curry, lebron)..."
+                        style="width:220px;">
+                    <input type="number" id="players-nba-id" placeholder="NBA Player ID (e.g. 201939)"
+                        style="display:none; width:200px;">
                     <button class="action-btn small" onclick="testPlayersAPI()">
                         <span class="icon">▶️</span> Run
                     </button>
@@ -1349,7 +1391,8 @@
                     <button class="copy-btn" onclick="copyPath('games-api-path')">📋 Copy</button>
                 </div>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                    💡 Returns complete box score with all player stats for a game. Game IDs follow format: 002SSGG### (SS=season, GG=game type)
+                    💡 Returns complete box score with all player stats for a game. Game IDs follow format: 002SSGG###
+                    (SS=season, GG=game type)
                 </p>
                 <div class="result-container" id="games-result">
                     <pre></pre>
@@ -1359,8 +1402,10 @@
             <!-- Common NBA Player IDs Reference -->
             <div class="api-tester">
                 <h3><span class="method">REF</span> Common NBA Player IDs</h3>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+                <div
+                    style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
                         <span>Stephen Curry: <strong style="color: var(--accent-blue);">201939</strong></span>
                         <span>LeBron James: <strong style="color: var(--accent-blue);">2544</strong></span>
                         <span>Kevin Durant: <strong style="color: var(--accent-blue);">201142</strong></span>
@@ -1381,7 +1426,8 @@
         <div class="tab-content" id="tab-data-management">
             <!-- Sub-tabs for different data types -->
             <div class="cms-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <button class="cms-tab active" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Player Game Stats</button>
+                <button class="cms-tab active" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Player Game
+                    Stats</button>
                 <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">🏀 Games</button>
                 <button class="cms-tab" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
                 <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
@@ -1393,7 +1439,9 @@
                 <div class="api-tester">
                     <h3>🎯 Player Game Stats (Last Results)</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="game-stats-search-input" placeholder="Search by player name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsGameStats()">
+                        <input type="text" id="game-stats-search-input" placeholder="Search by player name..."
+                            style="flex-grow: 1; min-width: 200px;"
+                            onkeyup="if(event.key==='Enter') loadCmsGameStats()">
                         <select id="game-stats-filter-team" style="width: 150px;">
                             <option value="">All Teams</option>
                             {% for team in teams %}
@@ -1403,31 +1451,39 @@
                         <button class="action-btn small" onclick="loadCmsGameStats()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddGameStatsForm()">➕ Add Game Stats</button>
                     </div>
-                    <div id="game-stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <div id="game-stats-pagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                         <span id="game-stats-pagination-info">Loading...</span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="game-stats-prev" onclick="loadCmsGameStatsPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="game-stats-next" onclick="loadCmsGameStatsPage(1)" disabled>Next →</button>
+                            <button class="action-btn small" id="game-stats-prev" onclick="loadCmsGameStatsPage(-1)"
+                                disabled>← Prev</button>
+                            <button class="action-btn small" id="game-stats-next" onclick="loadCmsGameStatsPage(1)"
+                                disabled>Next →</button>
                         </div>
                     </div>
-                    
+
                     <!-- Add Game Stats Form -->
-                    <div id="add-game-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="add-game-stats-form"
+                        style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game Stats</h4>
                         <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
-                            <input type="number" id="new-game-stats-player-id" placeholder="Player ID" style="width: 100px;">
-                            <input type="number" id="new-game-stats-game-id" placeholder="Game ID" style="width: 100px;">
+                            <input type="number" id="new-game-stats-player-id" placeholder="Player ID"
+                                style="width: 100px;">
+                            <input type="number" id="new-game-stats-game-id" placeholder="Game ID"
+                                style="width: 100px;">
                             <input type="number" id="new-game-stats-pts" placeholder="PTS" style="width: 70px;">
                             <input type="number" id="new-game-stats-reb" placeholder="REB" style="width: 70px;">
                             <input type="number" id="new-game-stats-ast" placeholder="AST" style="width: 70px;">
                             <input type="number" id="new-game-stats-stl" placeholder="STL" style="width: 70px;">
                             <input type="number" id="new-game-stats-blk" placeholder="BLK" style="width: 70px;">
-                            <input type="text" id="new-game-stats-minutes" placeholder="MIN (e.g., 34:22)" style="width: 100px;">
+                            <input type="text" id="new-game-stats-minutes" placeholder="MIN (e.g., 34:22)"
+                                style="width: 100px;">
                             <button class="action-btn small" onclick="addGameStats()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddGameStatsForm()" style="background: var(--bg-hover);">Cancel</button>
+                            <button class="action-btn small" onclick="hideAddGameStatsForm()"
+                                style="background: var(--bg-hover);">Cancel</button>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <table class="cms-table" id="game-stats-table">
                             <thead>
@@ -1446,7 +1502,10 @@
                                 </tr>
                             </thead>
                             <tbody id="game-stats-tbody">
-                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1473,30 +1532,42 @@
                         <button class="action-btn small" onclick="loadCmsGames()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddGameForm()">➕ Add Game</button>
                     </div>
-                    <div id="games-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <div id="games-pagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                         <span id="games-pagination-info">Loading...</span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next →</button>
+                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>←
+                                Prev</button>
+                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next
+                                →</button>
                         </div>
                     </div>
-                    
+
                     <!-- Add Game Form -->
-                    <div id="add-game-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="add-game-form"
+                        style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Game</h4>
                         <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
-                            <input type="text" id="new-game-nba-game-id" placeholder="NBA Game ID" style="width: 150px;">
-                            <input type="number" id="new-game-home-team-id" placeholder="Home Team ID" style="width: 120px;">
-                            <input type="number" id="new-game-away-team-id" placeholder="Away Team ID" style="width: 120px;">
-                            <input type="datetime-local" id="new-game-start-time" placeholder="Start Time" style="width: 200px;">
-                            <input type="text" id="new-game-status" placeholder="Status (scheduled/live/final)" style="width: 120px;">
-                            <input type="number" id="new-game-home-score" placeholder="Home Score" style="width: 100px;">
-                            <input type="number" id="new-game-away-score" placeholder="Away Score" style="width: 100px;">
+                            <input type="text" id="new-game-nba-game-id" placeholder="NBA Game ID"
+                                style="width: 150px;">
+                            <input type="number" id="new-game-home-team-id" placeholder="Home Team ID"
+                                style="width: 120px;">
+                            <input type="number" id="new-game-away-team-id" placeholder="Away Team ID"
+                                style="width: 120px;">
+                            <input type="datetime-local" id="new-game-start-time" placeholder="Start Time"
+                                style="width: 200px;">
+                            <input type="text" id="new-game-status" placeholder="Status (scheduled/live/final)"
+                                style="width: 120px;">
+                            <input type="number" id="new-game-home-score" placeholder="Home Score"
+                                style="width: 100px;">
+                            <input type="number" id="new-game-away-score" placeholder="Away Score"
+                                style="width: 100px;">
                             <button class="action-btn small" onclick="addGame()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddGameForm()" style="background: var(--bg-hover);">Cancel</button>
+                            <button class="action-btn small" onclick="hideAddGameForm()"
+                                style="background: var(--bg-hover);">Cancel</button>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <table class="cms-table" id="games-table">
                             <thead>
@@ -1513,7 +1584,10 @@
                                 </tr>
                             </thead>
                             <tbody id="games-tbody">
-                                <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="9" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1525,7 +1599,8 @@
                 <div class="api-tester">
                     <h3>👤 Players</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="players-search-input" placeholder="Search by name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsPlayers()">
+                        <input type="text" id="players-search-input" placeholder="Search by name..."
+                            style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsPlayers()">
                         <select id="players-filter-team" style="width: 150px;">
                             <option value="">All Teams</option>
                             {% for team in teams %}
@@ -1535,16 +1610,20 @@
                         <button class="action-btn small" onclick="loadCmsPlayers()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddPlayerForm()">➕ Add Player</button>
                     </div>
-                    <div id="players-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <div id="players-pagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                         <span id="players-pagination-info">Loading...</span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="players-prev" onclick="loadCmsPlayersPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="players-next" onclick="loadCmsPlayersPage(1)" disabled>Next →</button>
+                            <button class="action-btn small" id="players-prev" onclick="loadCmsPlayersPage(-1)"
+                                disabled>← Prev</button>
+                            <button class="action-btn small" id="players-next" onclick="loadCmsPlayersPage(1)"
+                                disabled>Next →</button>
                         </div>
                     </div>
-                    
+
                     <!-- Add Player Form (hidden by default) -->
-                    <div id="add-player-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="add-player-form"
+                        style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add New Player</h4>
                         <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
                             <input type="number" id="new-player-nba-id" placeholder="NBA ID" style="width: 100px;">
@@ -1558,10 +1637,11 @@
                             <input type="text" id="new-player-position" placeholder="Position" style="width: 80px;">
                             <input type="text" id="new-player-jersey" placeholder="#" style="width: 50px;">
                             <button class="action-btn small" onclick="addPlayer()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddPlayerForm()" style="background: var(--bg-hover);">Cancel</button>
+                            <button class="action-btn small" onclick="hideAddPlayerForm()"
+                                style="background: var(--bg-hover);">Cancel</button>
                         </div>
                     </div>
-                    
+
                     <div class="cms-table-container">
                         <table class="cms-table" id="players-table">
                             <thead>
@@ -1576,7 +1656,10 @@
                                 </tr>
                             </thead>
                             <tbody id="players-tbody">
-                                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1588,7 +1671,8 @@
                 <div class="api-tester">
                     <h3>📊 Player Season Stats</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="stats-search-input" placeholder="Search by name..." style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsStats()">
+                        <input type="text" id="stats-search-input" placeholder="Search by name..."
+                            style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsStats()">
                         <select id="stats-filter-team" style="width: 150px;">
                             <option value="">All Teams</option>
                             {% for team in teams %}
@@ -1598,20 +1682,25 @@
                         <button class="action-btn small" onclick="loadCmsStats()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddStatsForm()">➕ Add Stats</button>
                     </div>
-                    <div id="stats-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <div id="stats-pagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                         <span id="stats-pagination-info">Loading...</span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="stats-prev" onclick="loadCmsStatsPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="stats-next" onclick="loadCmsStatsPage(1)" disabled>Next →</button>
+                            <button class="action-btn small" id="stats-prev" onclick="loadCmsStatsPage(-1)" disabled>←
+                                Prev</button>
+                            <button class="action-btn small" id="stats-next" onclick="loadCmsStatsPage(1)" disabled>Next
+                                →</button>
                         </div>
                     </div>
-                    
+
                     <!-- Add Stats Form -->
-                    <div id="add-stats-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="add-stats-form"
+                        style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add Season Stats</h4>
                         <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
                             <input type="number" id="new-stats-player-id" placeholder="Player ID" style="width: 100px;">
-                            <input type="text" id="new-stats-season" placeholder="Season" value="{{ settings.current_season }}" style="width: 100px;">
+                            <input type="text" id="new-stats-season" placeholder="Season"
+                                value="{{ settings.current_season }}" style="width: 100px;">
                             <input type="number" step="0.1" id="new-stats-pts" placeholder="PPG" style="width: 70px;">
                             <input type="number" step="0.1" id="new-stats-reb" placeholder="RPG" style="width: 70px;">
                             <input type="number" step="0.1" id="new-stats-ast" placeholder="APG" style="width: 70px;">
@@ -1619,10 +1708,11 @@
                             <input type="number" step="0.1" id="new-stats-blk" placeholder="BPG" style="width: 70px;">
                             <input type="number" id="new-stats-gp" placeholder="GP" style="width: 60px;">
                             <button class="action-btn small" onclick="addStats()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddStatsForm()" style="background: var(--bg-hover);">Cancel</button>
+                            <button class="action-btn small" onclick="hideAddStatsForm()"
+                                style="background: var(--bg-hover);">Cancel</button>
                         </div>
                     </div>
-                    
+
                     <div class="cms-table-container">
                         <table class="cms-table" id="stats-table">
                             <thead>
@@ -1638,7 +1728,10 @@
                                 </tr>
                             </thead>
                             <tbody id="stats-tbody">
-                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1664,16 +1757,20 @@
                         <button class="action-btn small" onclick="loadCmsGames()">🔄 Refresh</button>
                         <button class="action-btn small" onclick="showAddGameForm()">➕ Add Game</button>
                     </div>
-                    <div id="games-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <div id="games-pagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                         <span id="games-pagination-info">Loading...</span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>← Prev</button>
-                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next →</button>
+                            <button class="action-btn small" id="games-prev" onclick="loadCmsGamesPage(-1)" disabled>←
+                                Prev</button>
+                            <button class="action-btn small" id="games-next" onclick="loadCmsGamesPage(1)" disabled>Next
+                                →</button>
                         </div>
                     </div>
-                    
+
                     <!-- Add Game Form -->
-                    <div id="add-game-form" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="add-game-form"
+                        style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Add New Game</h4>
                         <div class="input-group" style="flex-wrap: wrap; gap: 0.5rem;">
                             <select id="new-game-home" style="width: 130px;">
@@ -1690,12 +1787,14 @@
                             </select>
                             <input type="date" id="new-game-date" style="width: 140px;">
                             <input type="time" id="new-game-time" value="19:30" style="width: 100px;">
-                            <input type="text" id="new-game-season" value="{{ settings.current_season }}" style="width: 90px;">
+                            <input type="text" id="new-game-season" value="{{ settings.current_season }}"
+                                style="width: 90px;">
                             <button class="action-btn small" onclick="addGame()">💾 Save</button>
-                            <button class="action-btn small" onclick="hideAddGameForm()" style="background: var(--bg-hover);">Cancel</button>
+                            <button class="action-btn small" onclick="hideAddGameForm()"
+                                style="background: var(--bg-hover);">Cancel</button>
                         </div>
                     </div>
-                    
+
                     <div class="cms-table-container">
                         <table class="cms-table" id="games-table">
                             <thead>
@@ -1709,7 +1808,10 @@
                                 </tr>
                             </thead>
                             <tbody id="games-tbody">
-                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1723,7 +1825,7 @@
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                         <button class="action-btn small" onclick="loadCmsStandings()">🔄 Refresh</button>
                     </div>
-                    
+
                     <div class="cms-table-container">
                         <table class="cms-table" id="standings-table">
                             <thead>
@@ -1737,7 +1839,10 @@
                                 </tr>
                             </thead>
                             <tbody id="standings-tbody">
-                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1750,39 +1855,51 @@
             <div class="api-tester">
                 <h3>📊 Cache Metrics</h3>
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
-                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-blue);" id="cache-hits">0</div>
+                    <div
+                        style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-blue);" id="cache-hits">0
+                        </div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">CACHE HITS</div>
                     </div>
-                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-orange);" id="cache-misses">0</div>
+                    <div
+                        style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-orange);"
+                            id="cache-misses">0</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">CACHE MISSES</div>
                     </div>
-                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-purple);" id="upstream-calls">0</div>
+                    <div
+                        style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-purple);"
+                            id="upstream-calls">0</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">API CALLS</div>
                     </div>
-                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-green);" id="hit-rate">0%</div>
+                    <div
+                        style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-green);" id="hit-rate">0%
+                        </div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">HIT RATE</div>
                     </div>
                 </div>
-                
+
                 <h3 style="margin-top: 2rem;">🧹 Cache Management</h3>
-                <div style="display: flex; gap: 1rem; align-items: center; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                    <div style="flex-grow: 1;">
-                        <div class="api-path" style="margin-top: 0;">
-                            <span class="method-badge">POST</span>
-                            <span class="path">/api/admin/cache/clear?pattern=</span>
-                            <input type="text" id="purge-pattern" value="*" style="background: transparent; border: none; padding: 0; min-width: 50px; color: var(--accent-orange); font-family: inherit; font-size: inherit; width: 100px;">
-                        </div>
-                    </div>
-                    <button class="action-btn" onclick="purgeCache()" style="background: var(--accent-red); border-color: var(--accent-red); color: white;">
-                        <span class="icon">🔥</span> Purge Cache
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <button class="action-btn" onclick="purgeCache('*')"
+                        style="background: var(--accent-red); border-color: var(--accent-red); color: white; justify-content: center;">
+                        <span class="icon">🔥</span> Purge All Cache
+                    </button>
+                    <button class="action-btn" onclick="purgeCache('team:*')" style="justify-content: center;">
+                        <span class="icon">🏀</span> Purge All Teams
+                    </button>
+                    <button class="action-btn" onclick="purgeCache('player:*')" style="justify-content: center;">
+                        <span class="icon">👤</span> Purge All Players
+                    </button>
+                    <button class="action-btn" onclick="purgeCache('*standings*')" style="justify-content: center;">
+                        <span class="icon">📈</span> Purge Standings
                     </button>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">
-                    💡 Use <code>*</code> to clear everything, or patterns like <code>team:3:*</code> or <code>player:*</code>.
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+                    💡 One-click shortcuts for common cache clearing tasks.
                 </p>
             </div>
 
@@ -1805,7 +1922,7 @@
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                     <button class="action-btn small" onclick="loadCronJobs()">🔄 Refresh</button>
                 </div>
-                
+
                 <div class="cms-table-container">
                     <table class="cms-table" id="cron-jobs-table">
                         <thead>
@@ -1821,16 +1938,20 @@
                             </tr>
                         </thead>
                         <tbody id="cron-jobs-tbody">
-                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Running Job Logs Section -->
                 <div class="api-tester" id="running-job-logs" style="display: none; margin-top: 2rem;">
                     <h3>📋 Live Logs - <span id="running-job-name"></span></h3>
-                    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.875rem;">
-                        <div id="running-job-log-content" style="color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;">
+                    <div
+                        style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.875rem;">
+                        <div id="running-job-log-content"
+                            style="color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word;">
                             Waiting for logs...
                         </div>
                     </div>
@@ -1855,14 +1976,17 @@
                     </select>
                     <button class="action-btn small" onclick="loadCronRuns()">🔄 Refresh</button>
                 </div>
-                <div id="cron-runs-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                <div id="cron-runs-pagination"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                     <span id="cron-runs-pagination-info">Loading...</span>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="action-btn small" id="cron-runs-prev" onclick="loadCronRunsPage(-1)" disabled>← Prev</button>
-                        <button class="action-btn small" id="cron-runs-next" onclick="loadCronRunsPage(1)" disabled>Next →</button>
+                        <button class="action-btn small" id="cron-runs-prev" onclick="loadCronRunsPage(-1)" disabled>←
+                            Prev</button>
+                        <button class="action-btn small" id="cron-runs-next" onclick="loadCronRunsPage(1)" disabled>Next
+                            →</button>
                     </div>
                 </div>
-                
+
                 <div class="cms-table-container">
                     <table class="cms-table" id="cron-runs-table">
                         <thead>
@@ -1878,7 +2002,10 @@
                             </tr>
                         </thead>
                         <tbody id="cron-runs-tbody">
-                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading...</td></tr>
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                    Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1904,24 +2031,24 @@
                 const titleEl = document.getElementById('customModalTitle');
                 const messageEl = document.getElementById('customModalMessage');
                 const confirmBtn = document.getElementById('customModalConfirm');
-                
+
                 titleEl.textContent = title;
                 messageEl.textContent = message;
                 confirmBtn.textContent = confirmText;
-                
+
                 // Set danger styling if needed
                 if (isDanger) {
                     confirmBtn.classList.add('danger');
                 } else {
                     confirmBtn.classList.remove('danger');
                 }
-                
+
                 // Store callback
                 customModalCallback = resolve;
-                
+
                 // Show modal
                 overlay.classList.add('active');
-                
+
                 // Focus confirm button
                 setTimeout(() => confirmBtn.focus(), 100);
             });
@@ -2062,9 +2189,9 @@
                 const overlay = document.getElementById('runDetailsModalOverlay');
                 const titleEl = document.getElementById('runDetailsModalTitle');
                 const jsonEl = document.getElementById('runDetailsModalJson');
-                
+
                 titleEl.textContent = `📋 Cron Run Details: ${data.job_name}`;
-                
+
                 // Format the details nicely
                 const details = data.details || {};
                 const formatted = {
@@ -2080,7 +2207,7 @@
                     },
                     "Details": details
                 };
-                
+
                 jsonEl.textContent = JSON.stringify(formatted, null, 2);
                 overlay.classList.add('active');
             } catch (e) {
@@ -2097,14 +2224,14 @@
         function switchTab(tabName, updateHash = true) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
+
             const tab = document.querySelector(`.tab[data-tab="${tabName}"]`);
             const tabContent = document.getElementById('tab-' + tabName);
-            
+
             if (tab && tabContent) {
                 tab.classList.add('active');
                 tabContent.classList.add('active');
-                
+
                 // Update URL hash
                 if (updateHash) {
                     // If we're on data-management tab, preserve the CMS sub-tab
@@ -2119,7 +2246,7 @@
                         window.location.hash = tabName;
                     }
                 }
-                
+
                 // Auto-load data for specific tabs
                 if (tabName === 'cron-management') {
                     loadCronJobs();
@@ -2132,20 +2259,20 @@
         function switchCmsTab(cmsName, updateHash = true) {
             document.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.cms-content').forEach(c => c.classList.remove('active'));
-            
+
             const tab = document.querySelector(`.cms-tab[data-cms="${cmsName}"]`);
             const content = document.getElementById('cms-' + cmsName);
-            
+
             if (tab && content) {
                 tab.classList.add('active');
                 content.classList.add('active');
-                
+
                 // Update URL hash
                 if (updateHash) {
                     const mainTab = document.querySelector('.tab.active')?.dataset.tab || 'data-management';
                     window.location.hash = `${mainTab}/${cmsName}`;
                 }
-                
+
                 // Load data for the tab
                 if (cmsName === 'players') loadCmsPlayers();
                 if (cmsName === 'stats') loadCmsStats();
@@ -2162,10 +2289,10 @@
                 const parts = hash.split('/');
                 const mainTab = parts[0];
                 const cmsTab = parts[1];
-                
+
                 if (mainTab) {
                     switchTab(mainTab, false);
-                    
+
                     if (cmsTab && mainTab === 'data-management') {
                         setTimeout(() => switchCmsTab(cmsTab, false), 100);
                     }
@@ -2209,7 +2336,7 @@
             // API returns UTC times - parse as UTC and convert to local
             const utcDateStr = `${dateStr}T${timeStr || '00:00'}:00Z`; // Z indicates UTC
             const date = new Date(utcDateStr); // JavaScript Date parses UTC and converts to local automatically
-            
+
             return {
                 date: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
                 time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
@@ -2230,7 +2357,7 @@
             const gameDate = local.dateObj;
             const now = new Date();
             const threeHoursAgo = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-            
+
             // Game is relevant if it starts after 3 hours ago (future or ongoing)
             return gameDate >= threeHoursAgo;
         }
@@ -2243,7 +2370,7 @@
         async function loadAllWidgets() {
             const teamId = document.getElementById('widget-team').value;
             const playerId = document.getElementById('widget-player-id').value;
-            
+
             loadNextGamesWidget(teamId);
             loadSeasonAvgWidget(playerId);
             loadLastResultsWidget(teamId);
@@ -2255,34 +2382,34 @@
         async function loadNextGamesWidget(teamId) {
             const container = document.querySelector('#widget-next-games .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 const [gamesData, standingData] = await Promise.all([
                     // Fetch more games than needed so we can filter
                     fetch(`${API_BASE}/teams/${teamId}/next-games?count=10`).then(r => r.json()),
                     fetch(`${API_BASE}/teams/${teamId}/standings`).then(r => r.json())
                 ]);
-                
+
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
                 const record = `${standingData.wins}-${standingData.losses}`;
-                
+
                 // Filter to only future/ongoing games and take first 3
                 const futureGames = filterFutureGames(gamesData.games).slice(0, 3);
-                
+
                 let html = `
                     <div class="team-header">
                         <span class="team-abbr">${teamAbbr}</span>
                         <span class="team-record">(${record})</span>
                     </div>
                 `;
-                
+
                 if (futureGames.length === 0) {
                     html += '<div style="color: var(--text-muted); padding: 0.5rem 0;">No upcoming games scheduled</div>';
                 } else {
                     for (const game of futureGames) {
                         const local = formatLocalDate(game.date, game.time);
                         const vsAt = game.is_home ? 'vs' : '@';
-                        
+
                         html += `
                             <div class="game-row">
                                 <span class="game-vs">${vsAt}</span>
@@ -2292,7 +2419,7 @@
                         `;
                     }
                 }
-                
+
                 container.innerHTML = html;
             } catch (e) {
                 container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
@@ -2302,10 +2429,10 @@
         async function loadSeasonAvgWidget(playerId) {
             const container = document.querySelector('#widget-season-avg .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 const data = await fetch(`${API_BASE}/players/${playerId}/season-averages`).then(r => r.json());
-                
+
                 container.innerHTML = `
                     <div class="player-header">
                         <span class="player-name">${data.player_name}</span>
@@ -2330,17 +2457,17 @@
         async function loadLastResultsWidget(teamId) {
             const container = document.querySelector('#widget-last-results .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 const data = await fetch(`${API_BASE}/teams/${teamId}/last-games?count=3`).then(r => r.json());
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
-                
+
                 let html = '';
                 for (const game of data.games) {
                     const dateStr = formatLocalDateOnly(game.date);
                     const isWin = game.result === 'W';
                     const scoreClass = isWin ? 'win' : 'loss';
-                    
+
                     html += `
                         <div class="result-row">
                             <span class="result-teams">${teamAbbr} vs ${game.opponent}</span>
@@ -2349,7 +2476,7 @@
                         </div>
                     `;
                 }
-                
+
                 container.innerHTML = html;
             } catch (e) {
                 container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
@@ -2359,11 +2486,11 @@
         async function loadStandingWidget(teamId) {
             const container = document.querySelector('#widget-standing .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 const data = await fetch(`${API_BASE}/teams/${teamId}/standings`).then(r => r.json());
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
-                
+
                 container.innerHTML = `
                     <div class="team-name">${teamAbbr}</div>
                     <div class="standing-info">
@@ -2379,10 +2506,10 @@
         async function loadPlayerLastGameWidget(playerId) {
             const container = document.querySelector('#widget-player-last .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 const data = await fetch(`${API_BASE}/players/${playerId}/latest-game`).then(r => r.json());
-                
+
                 container.innerHTML = `
                     <div class="player-header">
                         <span class="player-name">${data.player_name}</span>
@@ -2406,35 +2533,35 @@
         async function loadCountdownWidget(teamId) {
             const container = document.querySelector('#widget-countdown .widget-content');
             container.innerHTML = '<div class="loading-spinner"></div> Loading...';
-            
+
             try {
                 // Fetch more games to filter
                 const data = await fetch(`${API_BASE}/teams/${teamId}/next-games?count=5`).then(r => r.json());
                 const teamAbbr = document.querySelector('#widget-team option:checked').dataset.abbr;
-                
+
                 // Filter to only future/ongoing games
                 const futureGames = filterFutureGames(data.games);
-                
+
                 if (futureGames.length === 0) {
                     container.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No upcoming games</div>';
                     return;
                 }
-                
+
                 const game = futureGames[0];
                 const local = formatLocalDate(game.date, game.time);
                 const gameDate = local.dateObj;
                 const now = new Date();
                 const diff = gameDate - now;
-                
+
                 // Check if game is currently in progress (started but within 3 hours)
                 const isInProgress = diff < 0 && diff > -(3 * 60 * 60 * 1000);
-                
+
                 const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
                 const hours = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
                 const mins = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
-                
+
                 const matchup = game.is_home ? `${game.opponent} vs ${teamAbbr}` : `${teamAbbr} @ ${game.opponent}`;
-                
+
                 if (isInProgress) {
                     container.innerHTML = `
                         <div class="matchup">${matchup}</div>
@@ -2471,17 +2598,16 @@
             }
         }
 
-        async function purgeCache() {
-            const pattern = document.getElementById('purge-pattern').value || '*';
+        async function purgeCache(pattern = '*') {
             const confirmed = await showCustomModal(
                 '🔥 Purge Cache',
-                `Are you sure you want to purge all cache keys matching "${pattern}"?`,
+                `Are you sure you want to purge cache for: "${pattern}"?`,
                 'Purge Now',
                 true
             );
-            
+
             if (!confirmed) return;
-            
+
             try {
                 const data = await apiCall(`/admin/cache/clear?pattern=${encodeURIComponent(pattern)}`, 'POST');
                 showToast(`Success! Purged ${data.keys_deleted} keys.`);
@@ -2501,9 +2627,9 @@
             const abbr = document.getElementById('teams-abbr-input').value || '{abbr}';
             const conference = document.getElementById('teams-conference').value;
             const count = document.getElementById('teams-count').value;
-            
+
             let path = '/api/teams';
-            switch(endpoint) {
+            switch (endpoint) {
                 case 'list': path = '/api/teams'; break;
                 case 'by-id': path = `/api/teams/${teamId}`; break;
                 case 'by-abbr': path = `/api/teams/abbr/${abbr.toUpperCase() || '{ABBR}'}`; break;
@@ -2520,9 +2646,9 @@
             const endpoint = document.getElementById('players-endpoint').value;
             const searchName = document.getElementById('players-search').value || '{name}';
             const nbaId = document.getElementById('players-nba-id').value || '{nba_player_id}';
-            
+
             let path = '/api/players/search?name={name}';
-            switch(endpoint) {
+            switch (endpoint) {
                 case 'search': path = `/api/players/search?name=${encodeURIComponent(searchName)}`; break;
                 case 'info': path = `/api/players/${nbaId}/info`; break;
                 case 'season-averages': path = `/api/players/${nbaId}/season-averages`; break;
@@ -2531,18 +2657,18 @@
             document.getElementById('players-api-path').textContent = path;
         }
 
-        document.getElementById('teams-endpoint').addEventListener('change', function() {
+        document.getElementById('teams-endpoint').addEventListener('change', function () {
             const teamSelect = document.getElementById('teams-team-select');
             const abbrInput = document.getElementById('teams-abbr-input');
             const conferenceSelect = document.getElementById('teams-conference');
             const countInput = document.getElementById('teams-count');
-            
+
             teamSelect.style.display = 'none';
             abbrInput.style.display = 'none';
             conferenceSelect.style.display = 'none';
             countInput.style.display = 'none';
-            
-            switch(this.value) {
+
+            switch (this.value) {
                 case 'by-id':
                 case 'next-games':
                 case 'last-games':
@@ -2568,15 +2694,15 @@
         document.getElementById('teams-conference').addEventListener('change', updateTeamsApiPath);
         document.getElementById('teams-count').addEventListener('input', updateTeamsApiPath);
 
-        document.getElementById('players-endpoint').addEventListener('change', function() {
+        document.getElementById('players-endpoint').addEventListener('change', function () {
             const searchInput = document.getElementById('players-search');
             const nbaIdInput = document.getElementById('players-nba-id');
             const hint = document.getElementById('players-hint');
-            
+
             searchInput.style.display = 'none';
             nbaIdInput.style.display = 'none';
-            
-            switch(this.value) {
+
+            switch (this.value) {
                 case 'search':
                     searchInput.style.display = 'block';
                     hint.textContent = '💡 Search for a player to find their NBA ID.';
@@ -2598,7 +2724,7 @@
             const container = document.getElementById(containerId);
             const pre = container.querySelector('pre');
             container.classList.add('show');
-            
+
             if (isError) {
                 pre.innerHTML = `<span class="error">${JSON.stringify(data, null, 2)}</span>`;
             } else {
@@ -2626,12 +2752,12 @@
             const abbr = document.getElementById('teams-abbr-input').value;
             const conference = document.getElementById('teams-conference').value;
             const count = document.getElementById('teams-count').value;
-            
+
             showLoading('teams-result');
-            
+
             try {
                 let url;
-                switch(endpoint) {
+                switch (endpoint) {
                     case 'list': url = '/teams'; break;
                     case 'by-id':
                         if (!teamId) throw { detail: 'Please select a team' };
@@ -2654,7 +2780,7 @@
                         if (!teamId) throw { detail: 'Please select a team' };
                         url = `/teams/${teamId}/roster`; break;
                 }
-                
+
                 const data = await apiCall(url);
                 showResult('teams-result', data);
             } catch (e) {
@@ -2666,12 +2792,12 @@
             const endpoint = document.getElementById('players-endpoint').value;
             const searchName = document.getElementById('players-search').value;
             const nbaPlayerId = document.getElementById('players-nba-id').value;
-            
+
             showLoading('players-result');
-            
+
             try {
                 let url;
-                switch(endpoint) {
+                switch (endpoint) {
                     case 'search':
                         if (!searchName || searchName.length < 2) throw { detail: 'Enter at least 2 characters' };
                         url = `/players/search?name=${encodeURIComponent(searchName)}`; break;
@@ -2685,7 +2811,7 @@
                         if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
                         url = `/players/${nbaPlayerId}/latest-game`; break;
                 }
-                
+
                 const data = await apiCall(url);
                 showResult('players-result', data);
             } catch (e) {
@@ -2695,17 +2821,17 @@
 
         async function testGamesAPI() {
             const gameId = document.getElementById('games-game-id').value;
-            
+
             showLoading('games-result');
-            
+
             try {
                 if (!gameId || gameId.length < 10) {
                     throw { detail: 'Please enter a valid Game ID (e.g. 0022500351)' };
                 }
-                
+
                 const url = `/games/${gameId}/boxscore`;
                 document.getElementById('games-api-path').textContent = `/api${url}`;
-                
+
                 const data = await apiCall(url);
                 showResult('games-result', data);
             } catch (e) {
@@ -2759,25 +2885,25 @@
         async function loadCmsPlayers() {
             const tbody = document.getElementById('players-tbody');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             const search = document.getElementById('players-search-input').value.trim();
             const teamId = document.getElementById('players-filter-team').value;
             const pag = cmsPagination.players;
-            
+
             let url = `/admin/data/players?limit=${pag.limit}&offset=${pag.offset}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
             if (teamId) url += `&team_id=${teamId}`;
-            
+
             try {
                 const data = await apiCall(url);
                 pag.total = data.total || 0;
-                
+
                 if (data.players.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No players found</td></tr>';
                     updatePaginationUI('players', pag);
                     return;
                 }
-                
+
                 tbody.innerHTML = data.players.map(p => `
                     <tr data-id="${p.id}">
                         <td>${p.id}</td>
@@ -2792,7 +2918,7 @@
                         </td>
                     </tr>
                 `).join('');
-                
+
                 updatePaginationUI('players', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="7" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
@@ -2809,13 +2935,13 @@
             const infoEl = document.getElementById(`${type}-pagination-info`);
             const prevBtn = document.getElementById(`${type}-prev`);
             const nextBtn = document.getElementById(`${type}-next`);
-            
+
             if (infoEl) {
                 const start = pag.offset + 1;
                 const end = Math.min(pag.offset + pag.limit, pag.total);
                 infoEl.textContent = `Showing ${start}-${end} of ${pag.total}`;
             }
-            
+
             if (prevBtn) prevBtn.disabled = pag.offset === 0;
             if (nextBtn) nextBtn.disabled = pag.offset + pag.limit >= pag.total;
         }
@@ -2826,12 +2952,12 @@
             const teamId = document.getElementById('new-player-team').value;
             const position = document.getElementById('new-player-position').value;
             const jersey = document.getElementById('new-player-jersey').value;
-            
+
             if (!nbaId || !name) {
                 showToast('NBA ID and Name required', 'error');
                 return;
             }
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/players`, {
                     method: 'POST',
@@ -2858,7 +2984,7 @@
             row.querySelectorAll('input[data-field]').forEach(input => {
                 data[input.dataset.field] = input.value || null;
             });
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/players/${id}`, {
                     method: 'PUT',
@@ -2886,25 +3012,25 @@
         async function loadCmsStats() {
             const tbody = document.getElementById('stats-tbody');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             const search = document.getElementById('stats-search-input').value.trim();
             const teamId = document.getElementById('stats-filter-team').value;
             const pag = cmsPagination.stats;
-            
+
             let url = `/admin/data/player-stats?limit=${pag.limit}&offset=${pag.offset}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
             if (teamId) url += `&team_id=${teamId}`;
-            
+
             try {
                 const data = await apiCall(url);
                 pag.total = data.total || 0;
-                
+
                 if (data.stats.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No stats found</td></tr>';
                     updatePaginationUI('stats', pag);
                     return;
                 }
-                
+
                 tbody.innerHTML = data.stats.map(s => `
                     <tr data-id="${s.id}">
                         <td>${s.id}</td>
@@ -2920,7 +3046,7 @@
                         </td>
                     </tr>
                 `).join('');
-                
+
                 updatePaginationUI('stats', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
@@ -2936,12 +3062,12 @@
         async function addStats() {
             const playerId = document.getElementById('new-stats-player-id').value;
             const season = document.getElementById('new-stats-season').value;
-            
+
             if (!playerId || !season) {
                 showToast('Player ID and Season required', 'error');
                 return;
             }
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/player-stats`, {
                     method: 'POST',
@@ -2971,7 +3097,7 @@
             row.querySelectorAll('input[data-field]').forEach(input => {
                 data[input.dataset.field] = input.type === 'number' ? parseFloat(input.value) : input.value;
             });
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/player-stats/${id}`, {
                     method: 'PUT',
@@ -2999,25 +3125,25 @@
         async function loadCmsGames() {
             const tbody = document.getElementById('games-tbody');
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             const teamId = document.getElementById('games-filter-team').value;
             const status = document.getElementById('games-filter-status').value;
             const pag = cmsPagination.games;
-            
+
             let url = `/admin/data/games?limit=${pag.limit}&offset=${pag.offset}`;
             if (teamId) url += `&team_id=${teamId}`;
             if (status) url += `&status=${status}`;
-            
+
             try {
                 const data = await apiCall(url);
                 pag.total = data.total || 0;
-                
+
                 if (data.games.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No games found</td></tr>';
                     updatePaginationUI('games', pag);
                     return;
                 }
-                
+
                 tbody.innerHTML = data.games.map(g => `
                     <tr data-id="${g.id}">
                         <td>${g.id}</td>
@@ -3041,7 +3167,7 @@
                         </td>
                     </tr>
                 `).join('');
-                
+
                 updatePaginationUI('games', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="6" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
@@ -3060,12 +3186,12 @@
             const gameDate = document.getElementById('new-game-date').value;
             const gameTime = document.getElementById('new-game-time').value;
             const season = document.getElementById('new-game-season').value;
-            
+
             if (!homeId || !awayId || !gameDate) {
                 showToast('Home, Away, and Date required', 'error');
                 return;
             }
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/games`, {
                     method: 'POST',
@@ -3097,7 +3223,7 @@
                     data[el.dataset.field] = val;
                 }
             });
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/games/${id}`, {
                     method: 'PUT',
@@ -3128,25 +3254,25 @@
         async function loadCmsGameStats() {
             const tbody = document.getElementById('game-stats-tbody');
             tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             const search = document.getElementById('game-stats-search-input').value.trim();
             const teamId = document.getElementById('game-stats-filter-team').value;
             const pag = cmsPagination.gameStats;
-            
+
             let url = `/admin/data/player-game-stats?limit=${pag.limit}&offset=${pag.offset}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
             if (teamId) url += `&team_id=${teamId}`;
-            
+
             try {
                 const data = await apiCall(url);
                 pag.total = data.total || 0;
-                
+
                 if (data.stats.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted);">No game stats found</td></tr>';
                     updatePaginationUI('game-stats', pag);
                     return;
                 }
-                
+
                 tbody.innerHTML = data.stats.map(s => `
                     <tr data-id="${s.id}">
                         <td>${s.id}</td>
@@ -3165,7 +3291,7 @@
                         </td>
                     </tr>
                 `).join('');
-                
+
                 updatePaginationUI('game-stats', pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="11" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
@@ -3181,12 +3307,12 @@
         async function addGameStats() {
             const playerId = document.getElementById('new-game-stats-player-id').value;
             const gameId = document.getElementById('new-game-stats-game-id').value;
-            
+
             if (!playerId || !gameId) {
                 showToast('Player ID and Game ID required', 'error');
                 return;
             }
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/player-game-stats`, {
                     method: 'POST',
@@ -3221,7 +3347,7 @@
                     data[input.dataset.field] = value || null;
                 }
             });
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/player-game-stats/${id}`, {
                     method: 'PUT',
@@ -3249,14 +3375,14 @@
         async function loadCmsStandings() {
             const tbody = document.getElementById('standings-tbody');
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             try {
                 const data = await apiCall('/admin/data/standings');
                 if (data.standings.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No standings found</td></tr>';
                     return;
                 }
-                
+
                 tbody.innerHTML = data.standings.map(s => `
                     <tr data-team-id="${s.team_id}">
                         <td>${s.team} - ${s.team_name}</td>
@@ -3284,7 +3410,7 @@
                     data[input.dataset.field] = input.value || null;
                 }
             });
-            
+
             try {
                 await fetch(`${API_BASE}/admin/data/standings/${teamId}`, {
                     method: 'PUT',
@@ -3342,25 +3468,25 @@
             if (!dateString) return 'N/A';
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return 'Invalid Date';
-            
+
             const hours = date.getHours();
             const minutes = date.getMinutes();
             const ampm = hours >= 12 ? 'PM' : 'AM';
             const displayHours = hours % 12 || 12;
             const displayMinutes = minutes.toString().padStart(2, '0');
-            
+
             const day = date.getDate();
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const month = monthNames[date.getMonth()];
             const year = date.getFullYear();
-            
+
             return `${displayHours}:${displayMinutes}${ampm}, ${day} ${month} ${year}`;
         }
 
         async function loadCronJobs() {
             const tbody = document.getElementById('cron-jobs-tbody');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             try {
                 // Cleanup stuck jobs first (wait for it to complete)
                 try {
@@ -3368,29 +3494,29 @@
                 } catch (e) {
                     // Ignore cleanup errors
                 }
-                
+
                 const data = await apiCall('/admin/cron/jobs');
-                
+
                 if (data.jobs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No cron jobs found</td></tr>';
                     return;
                 }
-                
+
                 // Populate job filter dropdown
                 const jobFilter = document.getElementById('cron-runs-filter-job');
                 if (jobFilter) {
-                    jobFilter.innerHTML = '<option value="">All Jobs</option>' + 
+                    jobFilter.innerHTML = '<option value="">All Jobs</option>' +
                         data.jobs.map(j => `<option value="${j.name}">${j.name}</option>`).join('');
                 }
-                
+
                 tbody.innerHTML = data.jobs.map(job => {
-                    const statusBadge = job.is_active 
+                    const statusBadge = job.is_active
                         ? '<span style="color: var(--accent-green);">● Active</span>'
                         : '<span style="color: var(--text-muted);">○ Inactive</span>';
-                    
-                    const successColor = job.success_rate >= 90 ? 'var(--accent-green)' : 
-                                       job.success_rate >= 70 ? 'var(--accent-yellow)' : 'var(--accent-red)';
-                    
+
+                    const successColor = job.success_rate >= 90 ? 'var(--accent-green)' :
+                        job.success_rate >= 70 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+
                     return `
                         <tr data-job-id="${job.id}">
                             <td>
@@ -3420,34 +3546,34 @@
         async function loadCronRuns() {
             const tbody = document.getElementById('cron-runs-tbody');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>';
-            
+
             // Cleanup stuck jobs first
             try {
                 await fetch(`${API_BASE}/admin/cron/cleanup-stuck`, { method: 'POST' });
             } catch (e) {
                 // Ignore cleanup errors
             }
-            
+
             const jobName = document.getElementById('cron-runs-filter-job')?.value;
             const status = document.getElementById('cron-runs-filter-status')?.value;
             const pag = cronRunsPagination;
-            
+
             let url = `/admin/cron/runs?limit=${pag.limit}&offset=${pag.offset}`;
             if (jobName) url += `&job_name=${encodeURIComponent(jobName)}`;
             if (status) url += `&status=${status}`;
-            
+
             try {
                 const data = await apiCall(url);
                 pag.total = data.total || 0;
-                
+
                 let runs = data.runs;
-                
+
                 if (runs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No runs found</td></tr>';
                     updateCronRunsPaginationUI(pag);
                     return;
                 }
-                
+
                 tbody.innerHTML = runs.map(run => {
                     // Check if job is actually stuck (running for more than 1 hour)
                     let isRunning = run.status === 'running';
@@ -3461,10 +3587,10 @@
                             isRunning = false; // Don't show as running if stuck
                         }
                     }
-                    
+
                     const statusColor = run.status === 'success' ? 'var(--accent-green)' :
-                                       run.status === 'failed' || isStuck ? 'var(--accent-red)' : 'var(--accent-yellow)';
-                    
+                        run.status === 'failed' || isStuck ? 'var(--accent-red)' : 'var(--accent-yellow)';
+
                     let duration = run.duration_seconds ? `${run.duration_seconds}s` : '-';
                     let statusDisplay = run.status.toUpperCase();
                     if (isStuck) {
@@ -3476,15 +3602,15 @@
                         const elapsed = Math.floor((new Date() - new Date(run.started_at)) / 1000);
                         duration = `${Math.floor(elapsed / 60)}m ${elapsed % 60}s (running)`;
                     }
-                    
-                    const rowStyle = (run.status === 'running' && !isStuck) ? 'background: rgba(255, 193, 7, 0.1); font-weight: 500;' : 
-                                    isStuck ? 'background: rgba(255, 0, 0, 0.1); font-weight: 500;' : '';
-                    
+
+                    const rowStyle = (run.status === 'running' && !isStuck) ? 'background: rgba(255, 193, 7, 0.1); font-weight: 500;' :
+                        isStuck ? 'background: rgba(255, 0, 0, 0.1); font-weight: 500;' : '';
+
                     // Format trigger source
                     const triggerIcon = run.triggered_by === 'manual' ? '👤' : '⏰';
                     const triggerText = run.triggered_by === 'manual' ? 'Manual' : 'Cron';
                     const triggerColor = run.triggered_by === 'manual' ? 'var(--accent-blue)' : 'var(--text-muted)';
-                    
+
                     return `
                         <tr style="${rowStyle}">
                             <td><strong>${run.job_name}</strong>${(run.status === 'running' && !isStuck) ? ' <span style="color: var(--accent-yellow);">⏳</span>' : ''}${isStuck ? ' <span style="color: var(--accent-red);">⚠️ STUCK</span>' : ''}</td>
@@ -3512,14 +3638,14 @@
                         </tr>
                     `;
                 }).join('');
-                
+
                 // Auto-refresh if there are running jobs
                 const hasRunning = runs.some(r => r.status === 'running');
                 if (hasRunning && !logWatchInterval) {
                     // Refresh runs every 5 seconds if there are running jobs
                     setTimeout(loadCronRuns, 5000);
                 }
-                
+
                 updateCronRunsPaginationUI(pag);
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" style="color: var(--accent-red);">Error: ${e.message || e.detail}</td></tr>`;
@@ -3536,13 +3662,13 @@
             const infoEl = document.getElementById('cron-runs-pagination-info');
             const prevBtn = document.getElementById('cron-runs-prev');
             const nextBtn = document.getElementById('cron-runs-next');
-            
+
             if (infoEl) {
                 const start = pag.offset + 1;
                 const end = Math.min(pag.offset + pag.limit, pag.total);
                 infoEl.textContent = `Showing ${start}-${end} of ${pag.total}`;
             }
-            
+
             if (prevBtn) prevBtn.disabled = pag.offset === 0;
             if (nextBtn) nextBtn.disabled = pag.offset + pag.limit >= pag.total;
         }
@@ -3556,7 +3682,7 @@
             if (!options) return; // Cancelled
 
             const { hoursBack, force } = options;
-            
+
             try {
                 const params = new URLSearchParams();
                 if (jobName === 'update_finished_games') {
@@ -3568,9 +3694,9 @@
 
                 const response = await fetch(`${API_BASE}/admin/cron/jobs/${jobId}/trigger?${params.toString()}`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to trigger job');
-                
+
                 showToast('Cron job triggered! Watching logs...');
-                
+
                 // Wait a moment for the run to be created, then find it and watch logs
                 setTimeout(async () => {
                     await loadCronRuns();
@@ -3590,7 +3716,7 @@
                         }, 2000);
                     }
                 }, 1000);
-                
+
                 setTimeout(() => {
                     loadCronJobs();
                     loadCronRuns();
@@ -3604,13 +3730,13 @@
             watchedRunId = runId;
             document.getElementById('running-job-name').textContent = jobName;
             document.getElementById('running-job-logs').style.display = 'block';
-            
+
             // Scroll to logs section
             document.getElementById('running-job-logs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
+
             // Load logs immediately
             refreshRunningJobLogs();
-            
+
             // Only start polling if job is still running (will be checked in refreshRunningJobLogs)
             if (logWatchInterval) clearInterval(logWatchInterval);
             // Start polling - refreshRunningJobLogs will stop it if job is completed
@@ -3628,14 +3754,14 @@
 
         async function refreshRunningJobLogs() {
             if (!watchedRunId) return;
-            
+
             try {
                 const data = await apiCall(`/admin/cron/runs/${watchedRunId}/logs`);
                 const logContent = document.getElementById('running-job-log-content');
-                
+
                 let logText = `Status: ${data.status}\n`;
                 logText += `Started: ${new Date(data.started_at).toLocaleString()}\n`;
-                
+
                 if (data.is_running) {
                     logText += `Elapsed: ${Math.floor((data.elapsed_seconds || 0) / 60)}m ${(data.elapsed_seconds || 0) % 60}s\n`;
                     logText += `⏳ Running...\n\n`;
@@ -3647,14 +3773,14 @@
                         logText += `Error: ${data.error_message}\n`;
                     }
                     logText += `\n`;
-                    
+
                     // Stop polling if job completed, but keep logs visible
                     if (logWatchInterval) {
                         clearInterval(logWatchInterval);
                         logWatchInterval = null;
                     }
                 }
-                
+
                 // Display logs from details.logs array if available
                 if (data.details && data.details.logs && Array.isArray(data.details.logs)) {
                     logText += `\n📋 ${data.is_running ? 'Live' : 'Completed'} Logs:\n`;
@@ -3665,16 +3791,16 @@
                     // Fallback to JSON if logs array not available (for running jobs)
                     logText += `\nDetails:\n${JSON.stringify(data.details, null, 2)}\n\n`;
                 }
-                
+
                 logContent.textContent = logText;
-                
+
                 // Only auto-scroll if user is already at bottom (or close to it)
                 const container = logContent.parentElement;
                 const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
                 if (isNearBottom) {
                     container.scrollTop = container.scrollHeight;
                 }
-                
+
             } catch (e) {
                 document.getElementById('running-job-log-content').textContent = `Error loading logs: ${e.message || e}`;
             }
@@ -3699,10 +3825,10 @@
                 true
             );
             if (!confirmed) return;
-            
+
             try {
                 const response = await fetch(`${API_BASE}/admin/cron/runs/${runId}/stop`, { method: 'POST' });
-                
+
                 let data;
                 try {
                     data = await response.json();
@@ -3711,18 +3837,18 @@
                     const text = await response.text();
                     throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
                 }
-                
+
                 if (!response.ok) {
                     throw new Error(data.detail || data.message || `HTTP ${response.status}: Failed to stop job`);
                 }
-                
+
                 showToast(data.message || 'Job stopped successfully');
-                
+
                 // Stop watching logs if we were watching this run
                 if (watchedRunId === runId) {
                     stopWatchingLogs();
                 }
-                
+
                 // Refresh runs immediately to show updated status
                 await loadCronRuns();
                 await loadCronJobs();
@@ -3743,10 +3869,10 @@
                 true
             );
             if (!confirmed) return;
-            
+
             try {
                 const response = await fetch(`${API_BASE}/admin/cron/runs/${runId}`, { method: 'DELETE' });
-                
+
                 let data;
                 try {
                     data = await response.json();
@@ -3755,18 +3881,18 @@
                     const text = await response.text();
                     throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
                 }
-                
+
                 if (!response.ok) {
                     throw new Error(data.detail || data.message || `HTTP ${response.status}: Failed to delete run`);
                 }
-                
+
                 showToast(data.message || 'Run deleted successfully');
-                
+
                 // Stop watching logs if we were watching this run
                 if (watchedRunId === runId) {
                     stopWatchingLogs();
                 }
-                
+
                 // Refresh runs
                 await loadCronRuns();
             } catch (e) {
@@ -3784,4 +3910,5 @@
         setInterval(updateMetrics, 10000);
     </script>
 </body>
+
 </html>
