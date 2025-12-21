@@ -1925,6 +1925,11 @@ class CronService:
                 
                 details["logs"].append(f"📅 Season: {settings.current_season}")
                 
+                # Pre-fetch all teams for mapping abbreviations to IDs
+                team_res = await db.execute(select(Team))
+                all_teams = team_res.scalars().all()
+                team_map = {t.abbreviation: t.id for t in all_teams}
+                
                 # Get all players
                 result = await db.execute(select(Player))
                 players = result.scalars().all()
@@ -1957,8 +1962,16 @@ class CronService:
                             players_skipped += 1
                             continue
                         
-                        # Sort by date descending
-                        games.sort(key=lambda x: x["game_date"], reverse=True)
+                        # Sort by parsed date descending to fix "Oct" > "Dec" string sort issue
+                        # Format from API: "Oct 27, 2024" (%b %d, %Y)
+                        def parse_game_date(g):
+                            try:
+                                return datetime.strptime(g["game_date"], "%b %d, %Y")
+                            except ValueError:
+                                # Fallback or log if format differs
+                                return datetime.min
+
+                        games.sort(key=parse_game_date, reverse=True)
                         latest_game_data = games[0]
                         
                         nba_game_id = latest_game_data["nba_game_id"]
@@ -1969,7 +1982,53 @@ class CronService:
                         
                         if not game:
                             # Create minimal game record
-                            game_date = datetime.strptime(latest_game_data["game_date"], "%Y-%m-%d").date()
+                            try:
+                                game_date = datetime.strptime(latest_game_data["game_date"], "%b %d, %Y").date()
+                            except ValueError:
+                                # Fallback for ISO format if API changes
+                                game_date = datetime.strptime(latest_game_data["game_date"], "%Y-%m-%d").date()
+                            
+                            # Determine Home/Away Teams from Matchup
+                            # Matchup format: "GSW vs. LAL" (Home) or "GSW @ LAL" (Away)
+                            matchup = latest_game_data.get("matchup", "")
+                            home_team_id = None
+                            away_team_id = None
+                            
+                            if "@" in matchup:
+                                # Away game: "GSW @ LAL" -> P1 (Visitor) @ P2 (Home)
+                                parts = matchup.split("@")
+                                if len(parts) == 2:
+                                    visitor_abbr = parts[0].strip()
+                                    home_abbr = parts[1].strip()
+                                    away_team_id = team_map.get(visitor_abbr)
+                                    home_team_id = team_map.get(home_abbr)
+                            elif "vs." in matchup:
+                                # Home game: "GSW vs. LAL" -> P1 (Home) vs P2 (Visitor)
+                                parts = matchup.split("vs.")
+                                if len(parts) == 2:
+                                    home_abbr = parts[0].strip()
+                                    visitor_abbr = parts[1].strip()
+                                    home_team_id = team_map.get(home_abbr)
+                                    away_team_id = team_map.get(visitor_abbr)
+                            elif " vs " in matchup:
+                                # Home game fallback: "GSW vs LAL"
+                                parts = matchup.split(" vs ")
+                                if len(parts) == 2:
+                                    home_abbr = parts[0].strip()
+                                    visitor_abbr = parts[1].strip()
+                                    home_team_id = team_map.get(home_abbr)
+                                    away_team_id = team_map.get(visitor_abbr)
+                            
+                            if not home_team_id or not away_team_id:
+                                # Fallback: try to guess from player's current team if specific abbr not found
+                                # But we handle this via "minimal" record - if we really can't find it, we might skip or fail?
+                                # Schema requires IDs. If we can't find them, we can't insert.
+                                details["logs"].append(f"   [{i}/{len(players)}] ⚠️ Could not determine teams for game {nba_game_id} from matchup '{matchup}'")
+                                # We can try to fetch game details properly? Or just skip adding the game and hope another player adds it correctly?
+                                # If we skip adding the game, we also skip adding player stats.
+                                players_skipped += 1
+                                continue
+
                             # Convert to datetime for UTC start time (imperfect but allows insert)
                             game_dt_utc = datetime(game_date.year, game_date.month, game_date.day, 0, 0, 0)
                             
@@ -1978,12 +2037,13 @@ class CronService:
                                 season=settings.current_season,
                                 season_type=settings.current_season_type,
                                 start_time_utc=game_dt_utc,
+                                home_team_id=home_team_id,
+                                away_team_id=away_team_id,
                                 status="final",
                                 source="bootstrap_script"
                             )
                             db.add(game)
                             await db.flush()
-                            details["logs"].append(f"   [{i}/{len(players)}] ➕ Created missing game {nba_game_id}")
                         
                         # Upsert PlayerGameStats
                         stats_res = await db.execute(
