@@ -1662,7 +1662,7 @@ class CronService:
                                 full_name=p_data["name"],
                                 team_id=team.id,
                                 position=p_data.get("position"),
-                                jersey=p_data.get("number")
+                                jersey_number=p_data.get("number")
                             )
                             db.add(player)
                             new_players += 1
