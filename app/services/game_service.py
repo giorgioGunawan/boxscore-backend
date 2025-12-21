@@ -48,7 +48,7 @@ class GameService:
         if not team:
             return []
         
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        now = datetime.utcnow()
         
         # Query upcoming games from DB
         result = await db.execute(
@@ -58,6 +58,7 @@ class GameService:
                 or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
                 Game.season == season,
                 Game.status == "scheduled",
+                Game.start_time_utc >= now,
             )
             .order_by(Game.start_time_utc.asc())
             .limit(count)
@@ -77,6 +78,7 @@ class GameService:
                         or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
                         Game.season == season,
                         Game.status == "scheduled",
+                        Game.start_time_utc >= now,
                     )
                     .order_by(Game.start_time_utc.asc())
                     .limit(count)
