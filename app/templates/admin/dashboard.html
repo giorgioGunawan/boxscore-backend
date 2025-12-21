@@ -2157,6 +2157,15 @@
                     `;
                 }
 
+                if (jobName === 'bootstrap_database') {
+                    formHTML += `
+                        <div style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107; padding: 0.75rem; margin-bottom: 1rem; border-radius: 4px;">
+                            <strong style="color: #ffc107; display: block; margin-bottom: 0.25rem;">⚠️ High Load Job</strong>
+                            <p style="margin: 0; font-size: 0.9rem;">This will fetch all teams, full season schedules, and all rosters. This may take 30-60 seconds.</p>
+                        </div>
+                    `;
+                }
+
                 // Force update checkbox (available for all jobs)
                 formHTML += `
                     <div class="form-group">

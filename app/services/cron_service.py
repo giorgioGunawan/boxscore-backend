@@ -1531,3 +1531,158 @@ class CronService:
                     "error": str(e),
                     "details": details
                 }
+
+    @staticmethod
+    async def bootstrap_database(
+        run_id: int,
+        cancellation_token: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Orchestrate a full initial setup of the database.
+        1. Seed Teams
+        2. Seed Schedules for all teams
+        3. Seed Player rosters
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "teams_seeded": 0,
+            "games_added": 0,
+            "players_added": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        async with AsyncSessionLocal() as db:
+            try:
+                details["logs"].append(f"🚀 Starting database bootstrap at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+
+                # 1. Seed Teams
+                details["logs"].append("🏀 Step 1: Seeding NBA teams...")
+                teams_count = await TeamService.seed_teams(db)
+                details["teams_seeded"] = teams_count
+                details["logs"].append(f"   ✅ Seeded {teams_count} teams")
+                await update_run_progress(run_id, details, db_session=db)
+
+                # Get all teams for the next steps
+                result = await db.execute(select(Team))
+                teams = result.scalars().all()
+
+                # 2. Seed Schedules
+                details["logs"].append("")
+                details["logs"].append("📅 Step 2: Seeding full season schedules...")
+                await update_run_progress(run_id, details, db_session=db)
+
+                for i, team in enumerate(teams, 1):
+                    if cancellation_token:
+                        cancellation_token.check()
+                    
+                    details["logs"].append(f"   [{i}/{len(teams)}] 📡 Fetching schedule for {team.abbreviation}...")
+                    await update_run_progress(run_id, details, db_session=db)
+
+                    loop = asyncio.get_event_loop()
+                    schedule = await loop.run_in_executor(
+                        None,
+                        lambda: NBAClient.get_team_schedule(
+                            team.nba_team_id,
+                            season=settings.current_season
+                        )
+                    )
+
+                    new_games = 0
+                    for game_data in schedule:
+                        nba_game_id = game_data["nba_game_id"]
+                        res = await db.execute(select(Game).where(Game.nba_game_id == nba_game_id))
+                        if not res.scalar_one_or_none():
+                            game = Game(
+                                nba_game_id=nba_game_id,
+                                season=settings.current_season,
+                                start_time_utc=game_data["game_datetime_utc"],
+                                status="scheduled"
+                            )
+                            
+                            opponent_abbr = game_data["opponent_abbr"]
+                            opp_res = await db.execute(select(Team).where(Team.abbreviation == opponent_abbr))
+                            opponent = opp_res.scalar_one_or_none()
+                            
+                            if opponent:
+                                if game_data["is_home"]:
+                                    game.home_team_id = team.id
+                                    game.away_team_id = opponent.id
+                                else:
+                                    game.home_team_id = opponent.id
+                                    game.away_team_id = team.id
+                                
+                                db.add(game)
+                                new_games += 1
+                    
+                    details["games_added"] += new_games
+                    details["logs"].append(f"   [{i}/{len(teams)}] ✅ Added {new_games} new games for {team.abbreviation}")
+                    await db.commit()
+                    await update_run_progress(run_id, details, db_session=db)
+
+                # 3. Seed Players
+                details["logs"].append("")
+                details["logs"].append("👥 Step 3: Seeding player rosters...")
+                await update_run_progress(run_id, details, db_session=db)
+                
+                for i, team in enumerate(teams, 1):
+                    if cancellation_token:
+                        cancellation_token.check()
+                    
+                    details["logs"].append(f"   [{i}/{len(teams)}] 📡 Fetching roster for {team.abbreviation}...")
+                    await update_run_progress(run_id, details, db_session=db)
+
+                    loop = asyncio.get_event_loop()
+                    roster = await loop.run_in_executor(
+                        None,
+                        lambda: NBAClient.get_team_roster(team.nba_team_id)
+                    )
+
+                    new_players = 0
+                    for p_data in roster:
+                        nba_id = p_data["nba_player_id"]
+                        res = await db.execute(select(Player).where(Player.nba_player_id == nba_id))
+                        player = res.scalar_one_or_none()
+                        
+                        if not player:
+                            player = Player(
+                                nba_player_id=nba_id,
+                                full_name=p_data["full_name"],
+                                team_id=team.id,
+                                position=p_data.get("position"),
+                                jersey=p_data.get("jersey")
+                            )
+                            db.add(player)
+                            new_players += 1
+                        else:
+                            player.team_id = team.id
+                    
+                    details["players_added"] += new_players
+                    details["logs"].append(f"   [{i}/{len(teams)}] ✅ Processed {len(roster)} players ({new_players} new)")
+                    await db.commit()
+                    await update_run_progress(run_id, details, db_session=db)
+
+                details["logs"].append("")
+                details["logs"].append("🎉 Database bootstrap completed successfully!")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+
+                return {
+                    "status": "success",
+                    "details": details
+                }
+
+            except Exception as e:
+                import traceback
+                error_msg = f"❌ Error during bootstrap: {str(e)}"
+                details["logs"].append(error_msg)
+                details["logs"].append(traceback.format_exc())
+                details["errors"].append(error_msg)
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }

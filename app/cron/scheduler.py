@@ -373,6 +373,12 @@ async def initialize_cron_jobs():
                 "schedule": "every 24 hours",
                 "cron_expression": None,
             },
+            {
+                "name": "bootstrap_database",
+                "description": "Manual: Orchestrate full initial setup (teams, schedules, rosters)",
+                "schedule": "manual",
+                "cron_expression": None,
+            },
         ]
         
         for job_data in jobs:
