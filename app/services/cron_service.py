@@ -1659,10 +1659,10 @@ class CronService:
                         if not player:
                             player = Player(
                                 nba_player_id=nba_id,
-                                full_name=p_data["full_name"],
+                                full_name=p_data["name"],
                                 team_id=team.id,
                                 position=p_data.get("position"),
-                                jersey=p_data.get("jersey")
+                                jersey=p_data.get("number")
                             )
                             db.add(player)
                             new_players += 1
