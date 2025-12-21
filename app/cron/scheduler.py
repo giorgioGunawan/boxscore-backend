@@ -379,6 +379,18 @@ async def initialize_cron_jobs():
                 "schedule": "manual",
                 "cron_expression": None,
             },
+            {
+                "name": "bootstrap_player_season_stats",
+                "description": "Manual: Bootstrap/Seed season stats for ALL players (creates missing records)",
+                "schedule": "manual",
+                "cron_expression": None,
+            },
+            {
+                "name": "bootstrap_player_last_games",
+                "description": "Manual: Bootstrap/Seed LAST GAME stats for ALL players (creates missing games/stats)",
+                "schedule": "manual",
+                "cron_expression": None,
+            },
         ]
         
         for job_data in jobs:

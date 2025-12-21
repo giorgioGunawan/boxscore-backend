@@ -196,6 +196,8 @@ async def trigger_cron_job(
         "update_players_team": lambda run_id, cancellation_token=None: CronService.update_players_team(run_id, cancellation_token, batch_size=50),
         "update_team_results": lambda run_id, cancellation_token=None: CronService.update_team_results(run_id, cancellation_token, team_id=team_id, limit=limit, force=force),
         "bootstrap_database": lambda run_id, cancellation_token=None: CronService.bootstrap_database(run_id, cancellation_token),
+        "bootstrap_player_season_stats": lambda run_id, cancellation_token=None: CronService.bootstrap_player_season_stats(run_id, cancellation_token),
+        "bootstrap_player_last_games": lambda run_id, cancellation_token=None: CronService.bootstrap_player_last_games(run_id, cancellation_token),
     }
     
     if job.name not in job_functions:

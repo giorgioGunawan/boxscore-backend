@@ -1741,3 +1741,326 @@ class CronService:
                     "error": str(e),
                     "details": details
                 }
+
+    @staticmethod
+    async def bootstrap_player_season_stats(
+        run_id: int,
+        cancellation_token: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Bootstrap player season stats for ALL players.
+        This iterates through every player in the DB and ensures they have a PlayerSeasonStats record
+        for the current season. Useful for initial population.
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "players_updated": 0,
+            "players_skipped": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        async with AsyncSessionLocal() as db:
+            try:
+                if cancellation_token:
+                    cancellation_token.check()
+                
+                details["logs"].append(f"🚀 Starting Player Season Stats Bootstrap at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                details["logs"].append(f"📅 Season: {settings.current_season}")
+                
+                # Get all players
+                result = await db.execute(select(Player))
+                players = result.scalars().all()
+                details["logs"].append(f"👥 Found {len(players)} players in database")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                players_updated = 0
+                players_skipped = 0
+                error_count = 0
+                
+                # Use a separate loop for processing to handle rate limits and updates
+                loop = asyncio.get_event_loop()
+                
+                for i, player in enumerate(players, 1):
+                    if cancellation_token:
+                        cancellation_token.check()
+                        
+                    try:
+                        # Fetch season stats
+                        # NBAClient.get_player_career_stats returns generic info.
+                        career_data = await loop.run_in_executor(
+                            None, 
+                            lambda: NBAClient.get_player_career_stats(player.nba_player_id)
+                        )
+                        
+                        if not career_data or not career_data.get("seasons"):
+                            details["logs"].append(f"   [{i}/{len(players)}] ⚠️ {player.full_name}: No stats found")
+                            players_skipped += 1
+                            continue
+                        
+                        # Find current season in the list
+                        current_season_stats = next(
+                            (s for s in career_data["seasons"] if s["season"] == settings.current_season),
+                            None
+                        )
+                        
+                        if not current_season_stats:
+                            details["logs"].append(f"   [{i}/{len(players)}] ⚠️ {player.full_name}: No stats for {settings.current_season}")
+                            players_skipped += 1
+                            continue
+                        
+                        # Upsert PlayerSeasonStats
+                        res = await db.execute(
+                            select(PlayerSeasonStats).where(
+                                PlayerSeasonStats.player_id == player.id,
+                                PlayerSeasonStats.season == settings.current_season
+                            )
+                        )
+                        stats = res.scalar_one_or_none()
+                        
+                        is_new = False
+                        if not stats:
+                            stats = PlayerSeasonStats(
+                                player_id=player.id,
+                                season=settings.current_season,
+                                season_type=settings.current_season_type
+                            )
+                            db.add(stats)
+                            is_new = True
+                        
+                        # Update fields
+                        stats.team_id = player.team_id  # Link to current team
+                        stats.games_played = current_season_stats.get("games_played", 0)
+                        stats.pts = current_season_stats.get("pts", 0)
+                        stats.reb = current_season_stats.get("reb", 0)
+                        stats.ast = current_season_stats.get("ast", 0)
+                        stats.stl = current_season_stats.get("stl", 0)
+                        stats.blk = current_season_stats.get("blk", 0)
+                        stats.fg_pct = current_season_stats.get("fg_pct", 0)
+                        stats.fg3_pct = current_season_stats.get("fg3_pct", 0)
+                        stats.ft_pct = current_season_stats.get("ft_pct", 0)
+                        stats.minutes = current_season_stats.get("minutes", 0)
+                        
+                        stats.last_api_sync = datetime.now(timezone.utc)
+                        
+                        players_updated += 1
+                        
+                        if i % 10 == 0:
+                            details["logs"].append(f"   [{i}/{len(players)}] ✅ Processed {player.full_name}")
+                            await db.commit()
+                            await update_run_progress(run_id, details, db_session=db)
+                            
+                        # Rate limit
+                        await asyncio.sleep(0.6)
+                            
+                    except Exception as e:
+                        error_count += 1
+                        details["logs"].append(f"   [{i}/{len(players)}] ❌ Error: {str(e)}")
+                        details["errors"].append(f"{player.full_name}: {str(e)}")
+                
+                await db.commit()
+                
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                
+                details["logs"].append("")
+                details["logs"].append("🏁 Season Stats Bootstrap Complete")
+                details["logs"].append(f"   Updated: {players_updated}")
+                details["logs"].append(f"   Skipped: {players_skipped}")
+                details["logs"].append(f"   Errors:  {error_count}")
+                details["logs"].append(f"   Duration: {duration:.2f}s")
+                
+                details["players_updated"] = players_updated
+                details["players_skipped"] = players_skipped
+                details["duration_seconds"] = duration
+                
+                return {
+                    "status": "success",
+                    "items_updated": players_updated,
+                    "details": details
+                }
+                
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                import traceback
+                details["errors"].append(str(e))
+                details["logs"].append(traceback.format_exc())
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }
+
+    @staticmethod
+    async def bootstrap_player_last_games(
+        run_id: int,
+        cancellation_token: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Bootstrap player LAST GAME stats for ALL players.
+        Iterates all players, fetches their game log, finds the latest game,
+        ensures the Game exists, and seeds/updates the PlayerGameStats.
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "games_processed": 0,
+            "players_processed": 0,
+            "players_skipped": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        async with AsyncSessionLocal() as db:
+            try:
+                if cancellation_token:
+                    cancellation_token.check()
+                
+                details["logs"].append(f"🚀 Starting Player Last Game Bootstrap at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                details["logs"].append(f"📅 Season: {settings.current_season}")
+                
+                # Get all players
+                result = await db.execute(select(Player))
+                players = result.scalars().all()
+                details["logs"].append(f"👥 Found {len(players)} players in database")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                players_updated = 0
+                players_skipped = 0
+                error_count = 0
+                
+                loop = asyncio.get_event_loop()
+                
+                for i, player in enumerate(players, 1):
+                    if cancellation_token:
+                        cancellation_token.check()
+                        
+                    try:
+                        # Fetch game log
+                        games = await loop.run_in_executor(
+                            None, 
+                            lambda: NBAClient.get_player_game_log(
+                                player.nba_player_id, 
+                                season=settings.current_season
+                            )
+                        )
+                        
+                        if not games:
+                            details["logs"].append(f"   [{i}/{len(players)}] ⚠️ {player.full_name}: No games found")
+                            players_skipped += 1
+                            continue
+                        
+                        # Sort by date descending
+                        games.sort(key=lambda x: x["game_date"], reverse=True)
+                        latest_game_data = games[0]
+                        
+                        nba_game_id = latest_game_data["nba_game_id"]
+                        
+                        # Ensure Game exists
+                        game_res = await db.execute(select(Game).where(Game.nba_game_id == nba_game_id))
+                        game = game_res.scalar_one_or_none()
+                        
+                        if not game:
+                            # Create minimal game record
+                            game_date = datetime.strptime(latest_game_data["game_date"], "%Y-%m-%d").date()
+                            # Convert to datetime for UTC start time (imperfect but allows insert)
+                            game_dt_utc = datetime(game_date.year, game_date.month, game_date.day, 0, 0, 0)
+                            
+                            game = Game(
+                                nba_game_id=nba_game_id,
+                                season=settings.current_season,
+                                season_type=settings.current_season_type,
+                                start_time_utc=game_dt_utc,
+                                status="final",
+                                source="bootstrap_script"
+                            )
+                            db.add(game)
+                            await db.flush()
+                            details["logs"].append(f"   [{i}/{len(players)}] ➕ Created missing game {nba_game_id}")
+                        
+                        # Upsert PlayerGameStats
+                        stats_res = await db.execute(
+                            select(PlayerGameStats).where(
+                                PlayerGameStats.player_id == player.id,
+                                PlayerGameStats.game_id == game.id
+                            )
+                        )
+                        stats = stats_res.scalar_one_or_none()
+                        
+                        if not stats:
+                            stats = PlayerGameStats(
+                                player_id=player.id,
+                                game_id=game.id
+                            )
+                            db.add(stats)
+                        
+                        # Update fields
+                        stats.pts = latest_game_data["pts"]
+                        stats.reb = latest_game_data["reb"]
+                        stats.ast = latest_game_data["ast"]
+                        stats.stl = latest_game_data["stl"]
+                        stats.blk = latest_game_data["blk"]
+                        stats.minutes = latest_game_data["minutes"]
+                        stats.fgm = latest_game_data["fgm"]
+                        stats.fga = latest_game_data["fga"]
+                        stats.fg3m = latest_game_data["fg3m"]
+                        stats.fg3a = latest_game_data["fg3a"]
+                        stats.ftm = latest_game_data["ftm"]
+                        stats.fta = latest_game_data["fta"]
+                        stats.plus_minus = latest_game_data["plus_minus"]
+                        stats.turnovers = latest_game_data["turnovers"]
+                        stats.last_api_sync = datetime.now(timezone.utc)
+                        
+                        players_updated += 1
+                        
+                        if i % 10 == 0:
+                            details["logs"].append(f"   [{i}/{len(players)}] ✅ Updated {player.full_name} (Last Game: {latest_game_data['game_date']})")
+                            await db.commit()
+                            await update_run_progress(run_id, details, db_session=db)
+                            
+                        # Rate limit
+                        await asyncio.sleep(0.6)
+                        
+                    except Exception as e:
+                        error_count += 1
+                        details["logs"].append(f"   [{i}/{len(players)}] ❌ Error: {str(e)}")
+                        details["errors"].append(f"{player.full_name}: {str(e)}")
+                
+                await db.commit()
+                
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                
+                details["logs"].append("")
+                details["logs"].append("🏁 Last Game Bootstrap Complete")
+                details["logs"].append(f"   Updated: {players_updated}")
+                details["logs"].append(f"   Skipped: {players_skipped}")
+                details["logs"].append(f"   Errors:  {error_count}")
+                details["logs"].append(f"   Duration: {duration:.2f}s")
+                
+                details["items_updated"] = players_updated
+                details["duration_seconds"] = duration
+                
+                return {
+                    "status": "success",
+                    "items_updated": players_updated,
+                    "details": details
+                }
+                
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                import traceback
+                details["errors"].append(str(e))
+                details["logs"].append(traceback.format_exc())
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }

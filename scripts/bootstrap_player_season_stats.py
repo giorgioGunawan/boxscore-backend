@@ -41,7 +41,7 @@ async def main():
                 # NBAClient.get_player_season_stats returns a dict with "seasons" list.
                 stats_data = await loop.run_in_executor(
                     None, 
-                    lambda: NBAClient.get_player_season_stats(
+                    lambda: NBAClient.get_player_career_stats(
                         player.nba_player_id
                     )
                 )
@@ -54,7 +54,7 @@ async def main():
                 # Find current season in the list
                 current_season_stats = None
                 for s in stats_data["seasons"]:
-                    if s["season_id"] == settings.current_season:
+                    if s["season"] == settings.current_season:
                         current_season_stats = s
                         break
                 
@@ -75,7 +75,8 @@ async def main():
                 if not stats:
                     stats = PlayerSeasonStats(
                         player_id=player.id,
-                        season=settings.current_season
+                        season=settings.current_season,
+                        season_type=settings.current_season_type
                     )
                     db.add(stats)
                 
@@ -92,7 +93,7 @@ async def main():
                 stats.ft_pct = current_season_stats.get("ft_pct", 0)
                 # Keep minutes as float if possible or string? Model usually expects float for averages.
                 # Checking model... assuming float or number. get_player_season_stats returns "min" usually as number.
-                stats.minutes = current_season_stats.get("min", 0)
+                stats.minutes = current_season_stats.get("minutes", 0)
                 
                 stats.last_api_sync = datetime.utcnow()
                 
