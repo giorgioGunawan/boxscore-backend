@@ -2017,8 +2017,21 @@
         <span id="toast-message"></span>
     </div>
 
+    <!-- Hidden data for JavaScript -->
+    <script id="dashboard-teams-data" type="application/json">
+        [
+            {% for team in teams %}
+            {"id": {{ team.id }}, "name": "{{ team.name }}", "abbr": "{{ team.abbreviation }}"}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+    </script>
+
     <script>
         const API_BASE = '/api';
+
+        // Read teams from data attribute to avoid auto-formatting issues with Jinja2 in script tags
+        const teamsDataEl = document.getElementById('dashboard-teams-data');
+        const DASHBOARD_TEAMS = teamsDataEl ? JSON.parse(teamsDataEl.textContent) : [];
 
         // =====================
         // CUSTOM MODAL FUNCTIONS
@@ -2120,6 +2133,30 @@
                     `;
                 }
 
+                // Form for update_team_results
+                if (jobName === 'update_team_results') {
+                    formHTML += `
+                        <div class="form-group">
+                            <label for="teamIdInput">Select Team</label>
+                            <select id="teamIdInput">
+                                <option value="">All Teams (Optimized Sync)</option>
+                                ${DASHBOARD_TEAMS.map(t => `<option value="${t.id}">${t.name} (${t.abbr})</option>`).join('')}
+                            </select>
+                            <small style="color: var(--text-muted); font-size: 0.85rem;">Specify a team or sync all teams (optimized league-wide call)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="limitInput">Game Limit (per team)</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="number" id="limitInput" value="5" min="1" max="100" placeholder="5">
+                                <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.9rem; cursor: pointer;">
+                                    <input type="checkbox" id="allGamesCheckbox"> All Season
+                                </label>
+                            </div>
+                            <small style="color: var(--text-muted); font-size: 0.85rem;">How many recent games to update per team</small>
+                        </div>
+                    `;
+                }
+
                 // Force update checkbox (available for all jobs)
                 formHTML += `
                     <div class="form-group">
@@ -2134,6 +2171,17 @@
                 `;
 
                 contentEl.innerHTML = `<div class="trigger-cron-form">${formHTML}</div>`;
+
+                // Add event listener to disable limit input if all games checked
+                const allGamesCheckbox = document.getElementById('allGamesCheckbox');
+                const limitInput = document.getElementById('limitInput');
+                if (allGamesCheckbox && limitInput) {
+                    allGamesCheckbox.addEventListener('change', () => {
+                        limitInput.disabled = allGamesCheckbox.checked;
+                        if (allGamesCheckbox.checked) limitInput.style.opacity = '0.5';
+                        else limitInput.style.opacity = '1';
+                    });
+                }
 
                 // Show modal
                 overlay.classList.add('active');
@@ -2163,17 +2211,33 @@
 
             let hoursBack = 12; // Default
             let force = false;
+            let teamId = null;
+            let limit = null;
 
             if (currentJobName === 'update_finished_games') {
                 const hoursBackInput = document.getElementById('hoursBackInput');
                 hoursBack = parseInt(hoursBackInput?.value) || 12;
             }
 
+            if (currentJobName === 'update_team_results') {
+                const teamIdInput = document.getElementById('teamIdInput');
+                const limitInput = document.getElementById('limitInput');
+                const allGamesCheckbox = document.getElementById('allGamesCheckbox');
+
+                if (teamIdInput && teamIdInput.value) teamId = parseInt(teamIdInput.value);
+
+                if (allGamesCheckbox && allGamesCheckbox.checked) {
+                    limit = 0; // 0 means "all season" in our backend
+                } else if (limitInput) {
+                    limit = parseInt(limitInput.value) || 5;
+                }
+            }
+
             const forceCheckbox = document.getElementById('forceUpdateCheckbox');
             force = forceCheckbox?.checked || false;
 
             if (triggerCronModalCallback) {
-                triggerCronModalCallback({ hoursBack, force });
+                triggerCronModalCallback({ hoursBack, force, teamId, limit });
                 triggerCronModalCallback = null;
             }
             currentJobId = null;
@@ -3681,12 +3745,16 @@
             const options = await showTriggerCronModal(jobId, jobName);
             if (!options) return; // Cancelled
 
-            const { hoursBack, force } = options;
+            const { hoursBack, force, teamId, limit } = options;
 
             try {
                 const params = new URLSearchParams();
-                if (jobName === 'update_finished_games') {
+                if (jobName === 'update_finished_games' && hoursBack) {
                     params.append('hours_back', hoursBack.toString());
+                }
+                if (jobName === 'update_team_results') {
+                    if (teamId) params.append('team_id', teamId);
+                    if (limit !== null) params.append('limit', limit);
                 }
                 if (force) {
                     params.append('force', 'true');

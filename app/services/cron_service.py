@@ -1312,3 +1312,221 @@ class CronService:
                     "error": str(e),
                     "details": details
                 }
+
+    @staticmethod
+    async def update_team_results(
+        run_id: int,
+        cancellation_token: Optional[Any] = None,
+        team_id: Optional[int] = None,
+        limit: Optional[int] = None,
+        force: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Comprehensive update of game results for teams.
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "games_updated": 0,
+            "teams_processed": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        # Handle "all games" (if limit is 0 or -1)
+        if limit is not None and limit <= 0:
+            limit = None
+            
+        async with AsyncSessionLocal() as db:
+            try:
+                if cancellation_token:
+                    cancellation_token.check()
+                
+                details["logs"].append(f"🔍 Starting update_team_results job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                
+                # Fetch all teams once for mapping
+                result = await db.execute(select(Team))
+                all_teams = result.scalars().all()
+                # Use int for nba_team_id matching
+                team_nba_map = {int(t.nba_team_id): t for t in all_teams}
+                
+                # OPTIMIZATION: If all teams and all (or many) games, use a single league-wide call
+                if not team_id:
+                    details["logs"].append("📡 Fetching league-wide game log (all teams)...")
+                    await update_run_progress(run_id, details, db_session=db)
+                    await db.commit()
+                    
+                    try:
+                        loop = asyncio.get_event_loop()
+                        from nba_api.stats.endpoints import leaguegamefinder
+                        
+                        def fetch_league():
+                            finder = leaguegamefinder.LeagueGameFinder(
+                                season_nullable=settings.current_season,
+                                league_id_nullable="00", # NBA
+                                season_type_nullable="Regular Season"
+                            )
+                            return finder.get_data_frames()[0]
+                            
+                        api_games_df = await loop.run_in_executor(None, fetch_league)
+                        
+                        # Process games from dataframe
+                        game_updates = 0
+                        
+                        # Sort by date DESC
+                        api_games_df = api_games_df.sort_values("GAME_DATE", ascending=False)
+                        
+                        # Filter to only processed NBA games (GAME_ID starts with 002)
+                        nba_games_only = api_games_df[api_games_df["GAME_ID"].str.startswith("002")]
+                        
+                        details["logs"].append(f"   ✓ Found {len(nba_games_only)} team-game rows in API log")
+                        
+                        processed_team_counts = {}
+                        
+                        for _, row in nba_games_only.iterrows():
+                            nba_id = row["GAME_ID"]
+                            nba_team_id = int(row["TEAM_ID"])
+                            
+                            # Skip if we reach limit for THIS team
+                            if limit:
+                                processed_team_counts[nba_team_id] = processed_team_counts.get(nba_team_id, 0) + 1
+                                if processed_team_counts[nba_team_id] > limit:
+                                    continue
+                            
+                            # Find game in DB
+                            result = await db.execute(
+                                select(Game).where(Game.nba_game_id == nba_id)
+                            )
+                            game = result.scalar_one_or_none()
+                            
+                            if not game:
+                                continue
+                            
+                            changed = False
+                            pts = row.get("PTS")
+                            
+                            current_team = team_nba_map.get(nba_team_id)
+                            if not current_team:
+                                continue
+                                
+                            if game.home_team_id == current_team.id:
+                                if game.home_score != pts:
+                                    game.home_score = pts
+                                    changed = True
+                            elif game.away_team_id == current_team.id:
+                                if game.away_score != pts:
+                                    game.away_score = pts
+                                    changed = True
+                                    
+                            if row.get("WL") and game.status != "final":
+                                game.status = "final"
+                                changed = True
+                                
+                            if changed:
+                                game.last_api_sync = datetime.now(timezone.utc)
+                                game_updates += 1
+                                details["games_updated"] += 1
+                        
+                        details["logs"].append(f"   ✅ Updated {game_updates} game scores/statuses via league-wide sync")
+                        details["teams_processed"] = len(all_teams)
+                        
+                    except Exception as e:
+                        details["logs"].append(f"   ❌ League-wide sync failed: {str(e)}")
+                        raise e
+                else:
+                    # Specific team sync
+                    team = next((t for t in all_teams if t.id == team_id), None)
+                    if not team:
+                        raise Exception(f"Team ID {team_id} not found")
+                        
+                    details["logs"].append(f"📡 Processing single team: {team.abbreviation}...")
+                    
+                    loop = asyncio.get_event_loop()
+                    api_games = await loop.run_in_executor(
+                        None,
+                        lambda: NBAClient.get_team_games(
+                            team.nba_team_id,
+                            season=settings.current_season
+                        )
+                    )
+                    
+                    if limit:
+                        api_games = api_games[:limit]
+                        
+                    details["logs"].append(f"   ✓ Found {len(api_games)} games for {team.abbreviation}")
+                    
+                    team_updates = 0
+                    for api_game in api_games:
+                        nba_id = api_game["nba_game_id"]
+                        result = await db.execute(
+                            select(Game).where(Game.nba_game_id == nba_id)
+                        )
+                        game = result.scalar_one_or_none()
+                        
+                        if not game:
+                            continue
+                            
+                        changed = False
+                        pts = api_game["team_score"]
+                        
+                        if api_game["is_home"]:
+                            if game.home_score != pts:
+                                game.home_score = pts
+                                changed = True
+                        else:
+                            if game.away_score != pts:
+                                game.away_score = pts
+                                changed = True
+                                
+                        if api_game["win_loss"] and game.status != "final":
+                            game.status = "final"
+                            changed = True
+                            
+                        if changed:
+                            game.last_api_sync = datetime.now(timezone.utc)
+                            team_updates += 1
+                            details["games_updated"] += 1
+                            
+                    details["logs"].append(f"   ✅ Updated {team_updates} games for {team.abbreviation}")
+                    details["teams_processed"] = 1
+                
+                await db.commit()
+                
+                # Update standings
+                details["logs"].append("")
+                details["logs"].append(f"📈 Updating standings for all teams...")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                count = await StandingsService.refresh_all_standings(
+                    db,
+                    season=settings.current_season,
+                    season_type="Regular Season"
+                )
+                details["logs"].append(f"   ✓ Updated standings for {count} teams")
+                await db.commit()
+
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                details["duration_seconds"] = duration
+                
+                details["logs"].append("")
+                details["logs"].append("📊 SUMMARY:")
+                details["logs"].append(f"   Teams processed: {details['teams_processed']}")
+                details["logs"].append(f"   Total games updated: {details['games_updated']}")
+                details["logs"].append(f"   Duration: {duration:.2f} seconds")
+                
+                return {
+                    "status": "success",
+                    "items_updated": details["games_updated"],
+                    "details": details
+                }
+                
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }

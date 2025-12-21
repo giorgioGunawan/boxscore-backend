@@ -172,6 +172,8 @@ async def list_all_runs(
 async def trigger_cron_job(
     job_id: int,
     hours_back: int = Query(default=7),
+    team_id: Optional[int] = Query(default=None),
+    limit: Optional[int] = Query(default=None),
     force: bool = Query(default=False),
     db: AsyncSession = Depends(get_db)
 ):
@@ -192,12 +194,13 @@ async def trigger_cron_job(
         "update_player_season_averages": lambda run_id, cancellation_token=None: CronService.update_player_season_averages_batch(run_id, cancellation_token, batch_size=50, force=force),
         "update_schedules": lambda run_id, cancellation_token=None: CronService.update_schedules(run_id, cancellation_token, force=force),
         "update_players_team": lambda run_id, cancellation_token=None: CronService.update_players_team(run_id, cancellation_token, batch_size=50),
+        "update_team_results": lambda run_id, cancellation_token=None: CronService.update_team_results(run_id, cancellation_token, team_id=team_id, limit=limit, force=force),
     }
     
     if job.name not in job_functions:
         raise HTTPException(status_code=400, detail=f"Unknown job: {job.name}")
     
-    print(f"[trigger_cron_job] Triggering job: {job.name} with hours_back={hours_back}, force={force}")
+    print(f"[trigger_cron_job] Triggering job: {job.name} with team_id={team_id}, limit={limit}, force={force}")
     
     # Create and store the task to prevent garbage collection
     task = asyncio.create_task(run_job_now(job.name, job_functions[job.name]))

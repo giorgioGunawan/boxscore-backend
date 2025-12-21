@@ -334,6 +334,11 @@ async def update_players_team_job():
     await run_cron_job("update_players_team", CronService.update_players_team)
 
 
+async def update_team_results_job():
+    """Cron job: Update team results and standings."""
+    await run_cron_job("update_team_results", CronService.update_team_results)
+
+
 async def initialize_cron_jobs():
     """Initialize cron job definitions in database."""
     async with AsyncSessionLocal() as db:
@@ -360,6 +365,12 @@ async def initialize_cron_jobs():
                 "name": "update_players_team",
                 "description": "Every 7 days: Update all players' team assignments from NBA API",
                 "schedule": "every 7 days",
+                "cron_expression": None,
+            },
+            {
+                "name": "update_team_results",
+                "description": "Every 24 hours: Comprehensive update of game results and standings",
+                "schedule": "every 24 hours",
                 "cron_expression": None,
             },
         ]
