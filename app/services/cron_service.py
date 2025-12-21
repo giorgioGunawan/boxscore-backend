@@ -1674,6 +1674,50 @@ class CronService:
                     await db.commit()
                     await update_run_progress(run_id, details, db_session=db)
 
+                # 4. Seed Results & Standings
+                details["logs"].append("")
+                details["logs"].append("🏆 Step 4: Seeding game results and standings...")
+                await update_run_progress(run_id, details, db_session=db)
+                
+                # We need to restart the session or use a new one because the called methods manage their own sessions?
+                # Actually, update_team_results and update_player_season_averages_batch manage their own sessions (AsyncSessionLocal).
+                # But we are inside an AsyncSessionLocal() block here. 
+                # Ideally we should call them. EXCEPT they take run_id.
+                # If we pass the same run_id, they will append to the same run logs.
+                
+                # Call update_team_results with limit=None (all games) and force=True
+                results_details = await CronService.update_team_results(
+                    run_id=run_id,
+                    cancellation_token=cancellation_token,
+                    limit=None,
+                    force=True
+                )
+                
+                # Mereg details/stats
+                if results_details.get("details", {}).get("logs"):
+                    details["logs"].extend(results_details["details"]["logs"])
+                
+                if results_details["status"] == "failed":
+                     details["errors"].append(f"Results error: {results_details.get('error')}")
+                
+                # 5. Seed Player Stats
+                details["logs"].append("")
+                details["logs"].append("📊 Step 5: Seeding player season stats...")
+                await update_run_progress(run_id, details, db_session=db)
+                
+                stats_details = await CronService.update_player_season_averages_batch(
+                    run_id=run_id,
+                    cancellation_token=cancellation_token,
+                    batch_size=50,
+                    force=True
+                )
+
+                if stats_details.get("details", {}).get("logs"):
+                     details["logs"].extend(stats_details["details"]["logs"])
+
+                if stats_details["status"] == "failed":
+                     details["errors"].append(f"Stats error: {stats_details.get('error')}")
+
                 details["logs"].append("")
                 details["logs"].append("🎉 Database bootstrap completed successfully!")
                 await update_run_progress(run_id, details, db_session=db)

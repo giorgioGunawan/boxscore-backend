@@ -50,11 +50,15 @@ async def main():
             team_count = await db.execute(text("SELECT COUNT(*) FROM teams"))
             game_count = await db.execute(text("SELECT COUNT(*) FROM games"))
             player_count = await db.execute(text("SELECT COUNT(*) FROM players"))
+            stats_count = await db.execute(text("SELECT COUNT(*) FROM player_season_stats"))
+            standings_count = await db.execute(text("SELECT COUNT(*) FROM team_standings"))
             
             print(f"\n✅ Verification Counts:")
             print(f"   Teams: {team_count.scalar()}")
             print(f"   Games: {game_count.scalar()}")
             print(f"   Players: {player_count.scalar()}")
+            print(f"   Stats: {stats_count.scalar()}")
+            print(f"   Standings: {standings_count.scalar()}")
     else:
         print("\n❌ Bootstrap failed.")
 
