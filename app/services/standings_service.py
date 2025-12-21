@@ -177,12 +177,20 @@ class StandingsService:
     async def refresh_all_standings(
         db: AsyncSession,
         season: str,
-        season_type: str
+        season_type: str,
+        run_id: Optional[int] = None,
+        details: Optional[dict] = None
     ) -> int:
         """
         Refresh standings for all teams from NBA API.
         Returns number of standings updated.
         """
+        from app.services.cron_service import update_run_progress
+
+        if run_id and details:
+            details["logs"].append("   📡 Fetching latest standings from NBA API...")
+            await update_run_progress(run_id, details, db_session=db)
+
         # Run in thread pool to avoid blocking event loop
         loop = asyncio.get_event_loop()
         standings_data = await loop.run_in_executor(
@@ -193,26 +201,44 @@ class StandingsService:
             )
         )
         
+        if run_id and details:
+            details["logs"].append(f"   ✓ received data for {len(standings_data)} teams")
+            await update_run_progress(run_id, details, db_session=db)
+
         # Get team ID mapping
         team_id_map = await TeamService.get_team_id_map(db)
         
+        # Bulk fetch existing standings to avoid N+1
+        result = await db.execute(
+            select(TeamStandings).where(
+                TeamStandings.season == season,
+                TeamStandings.season_type == season_type
+            )
+        )
+        existing_standings_list = result.scalars().all()
+        # Map by team_id for quick lookup
+        existing_map = {s.team_id: s for s in existing_standings_list}
+
         count = 0
-        for data in standings_data:
+        total_teams = len(standings_data)
+        
+        for i, data in enumerate(standings_data):
             nba_team_id = data.get("nba_team_id")
             team_id = team_id_map.get(nba_team_id)
             
             if not team_id:
                 continue
             
-            # Check if standing exists
-            result = await db.execute(
-                select(TeamStandings).where(
-                    TeamStandings.team_id == team_id,
-                    TeamStandings.season == season,
-                    TeamStandings.season_type == season_type,
-                )
-            )
-            standing = result.scalar_one_or_none()
+            # Progress update every 5 teams or at the end
+            if run_id and details and (i % 5 == 0 or i == total_teams - 1):
+                # Check for existing log to update instead of appending millions of lines
+                progress_msg = f"   🔄 Processing standings: {i+1}/{total_teams} teams..."
+                # Simple way: just append. The UI handles accumulating logs well.
+                details["logs"].append(progress_msg)
+                await update_run_progress(run_id, details, db_session=db)
+
+            # Check if standing exists in our bulk-fetched map
+            standing = existing_map.get(team_id)
             
             if standing:
                 # Update
@@ -240,7 +266,8 @@ class StandingsService:
                     last_10=data.get("last_10"),
                 )
                 db.add(standing)
-                count += 1
+            
+            count += 1
         
         await db.commit()
         

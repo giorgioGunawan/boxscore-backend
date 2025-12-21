@@ -1496,13 +1496,14 @@ class CronService:
                 details["logs"].append(f"📈 Updating standings for all teams...")
                 await update_run_progress(run_id, details, db_session=db)
                 await db.commit()
-                
                 count = await StandingsService.refresh_all_standings(
                     db,
                     season=settings.current_season,
-                    season_type="Regular Season"
+                    season_type="Regular Season",
+                    run_id=run_id,
+                    details=details
                 )
-                details["logs"].append(f"   ✓ Updated standings for {count} teams")
+                details["logs"].append(f"   ✅ Finished standings update")
                 await db.commit()
 
                 duration = (datetime.now(timezone.utc) - start_time).total_seconds()
