@@ -1767,6 +1767,23 @@
                         <div style="font-size: 0.75rem; color: var(--text-muted);">HIT RATE</div>
                     </div>
                 </div>
+                
+                <h3 style="margin-top: 2rem;">🧹 Cache Management</h3>
+                <div style="display: flex; gap: 1rem; align-items: center; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <div style="flex-grow: 1;">
+                        <div class="api-path" style="margin-top: 0;">
+                            <span class="method-badge">POST</span>
+                            <span class="path">/api/admin/cache/clear?pattern=</span>
+                            <input type="text" id="purge-pattern" value="*" style="background: transparent; border: none; padding: 0; min-width: 50px; color: var(--accent-orange); font-family: inherit; font-size: inherit; width: 100px;">
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="purgeCache()" style="background: var(--accent-red); border-color: var(--accent-red); color: white;">
+                        <span class="icon">🔥</span> Purge Cache
+                    </button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">
+                    💡 Use <code>*</code> to clear everything, or patterns like <code>team:3:*</code> or <code>player:*</code>.
+                </p>
             </div>
 
             <div class="api-tester">
@@ -2451,6 +2468,26 @@
                 }
             } catch (e) {
                 container.innerHTML = `<span style="color: var(--accent-red);">Error: ${e.message}</span>`;
+            }
+        }
+
+        async function purgeCache() {
+            const pattern = document.getElementById('purge-pattern').value || '*';
+            const confirmed = await showCustomModal(
+                '🔥 Purge Cache',
+                `Are you sure you want to purge all cache keys matching "${pattern}"?`,
+                'Purge Now',
+                true
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                const data = await apiCall(`/admin/cache/clear?pattern=${encodeURIComponent(pattern)}`, 'POST');
+                showToast(`Success! Purged ${data.keys_deleted} keys.`);
+                updateMetrics();
+            } catch (e) {
+                showToast('Failed to purge cache: ' + (e.detail || e.message || 'Unknown error'), 'error');
             }
         }
 
