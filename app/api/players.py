@@ -1,18 +1,21 @@
 """Player API endpoints."""
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.services import PlayerService
 from app.config import get_settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 settings = get_settings()
 
 
 @router.get("/search")
+@limiter.limit("20/minute")
 async def search_players(
+    request: Request,
     name: str = Query(..., min_length=2),
 ):
     """
@@ -28,8 +31,10 @@ async def search_players(
 
 
 @router.get("/{nba_player_id}/info")
+@limiter.limit("100/minute")
 async def get_player_info(
     nba_player_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -55,8 +60,10 @@ async def get_player_info(
 
 
 @router.get("/{nba_player_id}/season-averages")
+@limiter.limit("100/minute")
 async def get_player_season_averages(
     nba_player_id: int,
+    request: Request,
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
     refresh: bool = Query(default=False),
@@ -99,8 +106,10 @@ async def get_player_season_averages(
 
 
 @router.get("/{nba_player_id}/latest-game")
+@limiter.limit("100/minute")
 async def get_player_latest_game(
     nba_player_id: int,
+    request: Request,
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
     refresh: bool = Query(default=False),
@@ -143,7 +152,9 @@ async def get_player_latest_game(
 
 
 @router.get("/roster")
+@limiter.limit("100/minute")
 async def get_player_roster(
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """

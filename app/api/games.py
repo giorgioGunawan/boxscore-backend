@@ -1,13 +1,15 @@
 """API endpoints for game and boxscore data."""
 import asyncio
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from app.nba_client import NBAClient
+from app.core.limiter import limiter
 
 router = APIRouter(tags=["games"])
 
 
 @router.get("/{game_id}/boxscore")
-async def get_game_boxscore(game_id: str):
+@limiter.limit("100/minute")
+async def get_game_boxscore(game_id: str, request: Request):
     """
     Get complete box score for a game including all player stats.
     

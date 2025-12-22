@@ -1,26 +1,29 @@
 """Team API endpoints."""
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.services import TeamService, GameService, StandingsService
 from app.nba_client import NBAClient
 from app.config import get_settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 settings = get_settings()
 
 
 @router.get("")
-async def list_teams(db: AsyncSession = Depends(get_db)):
+@limiter.limit("100/minute")
+async def list_teams(request: Request, db: AsyncSession = Depends(get_db)):
     """Get all NBA teams."""
     teams = await TeamService.get_all_teams(db)
     return {"teams": teams, "count": len(teams)}
 
 
 @router.get("/{team_id}")
-async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):
+@limiter.limit("100/minute")
+async def get_team(team_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Get team by ID."""
     team = await TeamService.get_team_by_id(db, team_id)
     if not team:
@@ -29,7 +32,8 @@ async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/abbr/{abbreviation}")
-async def get_team_by_abbr(abbreviation: str, db: AsyncSession = Depends(get_db)):
+@limiter.limit("100/minute")
+async def get_team_by_abbr(abbreviation: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Get team by abbreviation (e.g., GSW, LAL)."""
     team = await TeamService.get_team_by_abbreviation(db, abbreviation)
     if not team:
@@ -38,8 +42,10 @@ async def get_team_by_abbr(abbreviation: str, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/{team_id}/next-games")
+@limiter.limit("100/minute")
 async def get_next_games(
     team_id: int,
+    request: Request,
     count: int = Query(default=5, ge=1, le=20),
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
@@ -71,8 +77,10 @@ async def get_next_games(
 
 
 @router.get("/{team_id}/last-games")
+@limiter.limit("100/minute")
 async def get_last_games(
     team_id: int,
+    request: Request,
     count: int = Query(default=5, ge=1, le=20),
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
@@ -105,8 +113,10 @@ async def get_last_games(
 
 
 @router.get("/{team_id}/standings")
+@limiter.limit("100/minute")
 async def get_team_standings(
     team_id: int,
+    request: Request,
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
     refresh: bool = Query(default=False),
@@ -141,8 +151,10 @@ async def get_team_standings(
 
 
 @router.get("/standings/{conference}")
+@limiter.limit("100/minute")
 async def get_conference_standings(
     conference: str,
+    request: Request,
     season: Optional[str] = Query(default=None),
     season_type: str = Query(default="Regular Season"),
     refresh: bool = Query(default=False),
@@ -170,8 +182,10 @@ async def get_conference_standings(
 
 
 @router.get("/{team_id}/roster")
+@limiter.limit("100/minute")
 async def get_team_roster(
     team_id: int,
+    request: Request,
     season: Optional[str] = Query(default=None),
     db: AsyncSession = Depends(get_db)
 ):

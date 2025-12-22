@@ -14,6 +14,9 @@ from app.api import api_router
 from app.api.admin import set_templates
 from app.config import get_settings
 from app.cron import start_scheduler, stop_scheduler
+from app.core.limiter import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Reduce SQLAlchemy logging noise
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
@@ -57,6 +60,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Rate limiter setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 app.add_middleware(
