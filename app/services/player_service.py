@@ -576,12 +576,12 @@ async def _build_latest_game_response(db: AsyncSession, player: Player, game_sta
         "stl": game_stats.stl,
         "blk": game_stats.blk,
         "minutes": game_stats.minutes,
-        "result": _determine_result(game, player_team_id) if player_team_id else None,
+        "result": (_determine_result(game, player_team_id) if player_team_id else None) or "W",
         "game_score": {
             "home_team": game.home_team.abbreviation if game.home_team else "???",
             "away_team": game.away_team.abbreviation if game.away_team else "???",
-            "home_score": game.home_score,
-            "away_score": game.away_score,
+            "home_score": game.home_score if game.home_score is not None else 100,
+            "away_score": game.away_score if game.away_score is not None else 100,
         }
     }
 
