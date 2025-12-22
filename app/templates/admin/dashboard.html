@@ -2941,11 +2941,11 @@
 
         document.getElementById('players-endpoint').addEventListener('change', function () {
             const searchInput = document.getElementById('players-search');
-            const nbaIdInput = document.getElementById('players-nba-id');
+            const idContainer = document.getElementById('players-id-container');
             const hint = document.getElementById('players-hint');
 
             searchInput.style.display = 'none';
-            nbaIdInput.style.display = 'none';
+            idContainer.style.display = 'none';
 
             switch (this.value) {
                 case 'search':
@@ -3058,6 +3058,8 @@
                     case 'latest-game':
                         if (!nbaPlayerId) throw { detail: 'Please enter NBA Player ID' };
                         url = `/players/${nbaPlayerId}/latest-game`; break;
+                    case 'roster':
+                        url = `/players/roster`; break;
                 }
 
                 const data = await apiCall(url);
