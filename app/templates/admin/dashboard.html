@@ -149,6 +149,62 @@
             transition: all 0.2s ease;
         }
 
+        /* Search Component Styles */
+        .search-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: var(--shadow);
+            margin-top: 4px;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .search-result-item .player-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .search-result-item .player-team {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg-primary);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+        }
+
         .action-btn:hover {
             background: var(--bg-hover);
             border-color: var(--accent-orange);
@@ -1214,8 +1270,11 @@
                             %}selected{% endif %}>{{ team.name }} ({{ team.abbreviation }})</option>
                         {% endfor %}
                     </select>
-                    <input type="number" id="widget-player-id" value="201939" placeholder="NBA Player ID"
-                        style="width: 150px;">
+                    <div class="search-container">
+                        <input type="text" id="widget-player-search" placeholder="Search Player..." autocomplete="off">
+                        <input type="hidden" id="widget-player-id" value="201939">
+                        <div id="widget-player-results" class="search-results"></div>
+                    </div>
                     <button class="action-btn small" onclick="loadAllWidgets()">
                         <span class="icon">🔄</span> Load Widgets
                     </button>
@@ -1354,11 +1413,16 @@
                         <option value="info">Player Info</option>
                         <option value="season-averages">Season Averages</option>
                         <option value="latest-game">Latest Game</option>
+                        <option value="roster">Get All Players (Roster)</option>
                     </select>
                     <input type="text" id="players-search" placeholder="Search name (e.g. curry, lebron)..."
                         style="width:220px;">
-                    <input type="number" id="players-nba-id" placeholder="NBA Player ID (e.g. 201939)"
-                        style="display:none; width:200px;">
+
+                    <div id="players-id-container" class="search-container" style="display: none;">
+                        <input type="text" id="players-nba-search" placeholder="Search Player..." autocomplete="off">
+                        <input type="hidden" id="players-nba-id" placeholder="NBA Player ID (e.g. 201939)">
+                        <div id="players-nba-results" class="search-results"></div>
+                    </div>
                     <button class="action-btn small" onclick="testPlayersAPI()">
                         <span class="icon">▶️</span> Run
                     </button>
@@ -1426,18 +1490,22 @@
         <div class="tab-content" id="tab-data-management">
             <!-- Sub-tabs for different data types -->
             <div class="cms-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <button class="cms-tab active" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯 Player Game
+                <button class="cms-tab active" data-cms="game-stats" onclick="switchCmsTab('game-stats')">🎯
+                    [Player] Latest Game
                     Stats</button>
-                <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">🏀 Games</button>
-                <button class="cms-tab" data-cms="players" onclick="switchCmsTab('players')">👤 Players</button>
-                <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">📊 Stats</button>
-                <button class="cms-tab" data-cms="standings" onclick="switchCmsTab('standings')">📈 Standings</button>
+                <button class="cms-tab" data-cms="games" onclick="switchCmsTab('games')">[Team] Games</button>
+                <button class="cms-tab" data-cms="players" onclick="switchCmsTab('players')">[Player] Players
+                    DB</button>
+                <button class="cms-tab" data-cms="stats" onclick="switchCmsTab('stats')">[Player] Season
+                    Average</button>
+                <button class="cms-tab" data-cms="standings" onclick="switchCmsTab('standings')">[Team]
+                    Standings</button>
             </div>
 
             <!-- Player Game Stats CMS -->
             <div class="cms-content active" id="cms-game-stats">
                 <div class="api-tester">
-                    <h3>🎯 Player Game Stats (Last Results)</h3>
+                    <h3>🎯 Latest Results</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
                         <input type="text" id="game-stats-search-input" placeholder="Search by player name..."
                             style="flex-grow: 1; min-width: 200px;"
@@ -1515,7 +1583,7 @@
             <!-- Games CMS -->
             <div class="cms-content" id="cms-games">
                 <div class="api-tester">
-                    <h3>🏀 Games</h3>
+                    <h3>[Team] Games</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
                         <select id="games-filter-team" style="width: 150px;">
                             <option value="">All Teams</option>
@@ -1597,7 +1665,7 @@
             <!-- Players CMS -->
             <div class="cms-content" id="cms-players">
                 <div class="api-tester">
-                    <h3>👤 Players</h3>
+                    <h3>[Players] Players DB</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
                         <input type="text" id="players-search-input" placeholder="Search by name..."
                             style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsPlayers()">
@@ -1669,7 +1737,7 @@
             <!-- Stats CMS -->
             <div class="cms-content" id="cms-stats">
                 <div class="api-tester">
-                    <h3>📊 Player Season Stats</h3>
+                    <h3>[Player] Season Average</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
                         <input type="text" id="stats-search-input" placeholder="Search by name..."
                             style="flex-grow: 1; min-width: 200px;" onkeyup="if(event.key==='Enter') loadCmsStats()">
@@ -1741,7 +1809,7 @@
             <!-- Games CMS -->
             <div class="cms-content" id="cms-games">
                 <div class="api-tester">
-                    <h3>🏀 Games</h3>
+                    <h3>[Team] Games</h3>
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
                         <select id="games-filter-team" style="width: 150px;">
                             <option value="">All Teams</option>
@@ -2032,6 +2100,7 @@
         // Read teams from data attribute to avoid auto-formatting issues with Jinja2 in script tags
         const teamsDataEl = document.getElementById('dashboard-teams-data');
         const DASHBOARD_TEAMS = teamsDataEl ? JSON.parse(teamsDataEl.textContent) : [];
+        let ALL_PLAYERS = [];
 
         // =====================
         // CUSTOM MODAL FUNCTIONS
@@ -2726,8 +2795,106 @@
                 case 'info': path = `/api/players/${nbaId}/info`; break;
                 case 'season-averages': path = `/api/players/${nbaId}/season-averages`; break;
                 case 'latest-game': path = `/api/players/${nbaId}/latest-game`; break;
+                case 'roster': path = `/api/players/roster`; break;
             }
             document.getElementById('players-api-path').textContent = path;
+        }
+
+        // =====================
+        // PLAYER SEARCH LOGIC
+        // =====================
+
+        async function initPlayerSearch() {
+            try {
+                const response = await fetch(`${API_BASE}/players/roster`);
+                const data = await response.json();
+                if (data.players) {
+                    ALL_PLAYERS = data.players;
+                    console.log('Roster loaded:', ALL_PLAYERS.length, 'players');
+
+                    // Initialize search widgets once data is loaded
+                    setupPlayerSearch('widget-player-search', 'widget-player-id', 'widget-player-results');
+                    setupPlayerSearch('players-nba-search', 'players-nba-id', 'players-nba-results');
+
+                    // Pre-fill widget search input if ID exists
+                    const widgetId = document.getElementById('widget-player-id').value;
+                    if (widgetId) {
+                        const player = ALL_PLAYERS.find(p => p.nba_player_id == widgetId);
+                        if (player) {
+                            document.getElementById('widget-player-search').value = player.name;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load roster:', e);
+                showToast('Failed to load player roster', 'error');
+            }
+        }
+
+        function setupPlayerSearch(searchInputId, hiddenInputId, resultsId) {
+            const searchInput = document.getElementById(searchInputId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const results = document.getElementById(resultsId);
+
+            if (!searchInput || !hiddenInput || !results) return;
+
+            // Hide results on click outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !results.contains(e.target)) {
+                    results.classList.remove('show');
+                }
+            });
+
+            // Search handler
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase().trim();
+
+                if (query.length < 2) {
+                    results.classList.remove('show');
+                    return;
+                }
+
+                // Fuzzy search logic
+                const matches = ALL_PLAYERS.filter(p => {
+                    const name = p.name.toLowerCase();
+                    // Direct match
+                    if (name.includes(query)) return true;
+                    // Initial match (e.g. "sc" for "Stephen Curry")
+                    const parts = name.split(' ');
+                    if (parts.length > 1 && parts[0].startsWith(query[0]) && parts[1].startsWith(query[1])) return true;
+                    return false;
+                }).slice(0, 10); // Limit to 10 results
+
+                if (matches.length > 0) {
+                    results.innerHTML = matches.map(p => `
+                        <div class="search-result-item" onclick="selectPlayer('${p.nba_player_id}', '${p.name.replace(/'/g, "\\'")}', '${searchInputId}', '${hiddenInputId}', '${resultsId}')">
+                            <span class="player-name">${p.name}</span>
+                            <span class="player-team">${p.team_abbreviation}</span>
+                        </div>
+                    `).join('');
+                    results.classList.add('show');
+                } else {
+                    results.classList.remove('show');
+                }
+            });
+
+            // Show results on focus if input has value
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.length >= 2) {
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        function selectPlayer(id, name, searchInputId, hiddenInputId, resultsId) {
+            document.getElementById(searchInputId).value = name;
+            document.getElementById(hiddenInputId).value = id;
+            document.getElementById(resultsId).classList.remove('show');
+
+            // Trigger change event/update path
+            if (hiddenInputId === 'players-nba-id') {
+                updatePlayersApiPath();
+            }
         }
 
         document.getElementById('teams-endpoint').addEventListener('change', function () {
@@ -2783,15 +2950,18 @@
                 case 'info':
                 case 'season-averages':
                 case 'latest-game':
-                    nbaIdInput.style.display = 'block';
-                    hint.textContent = '💡 Enter NBA Player ID (e.g. 201939 for Curry).';
+                    idContainer.style.display = 'inline-block';
+                    hint.textContent = '💡 Search for a player above.';
+                    break;
+                case 'roster':
+                    hint.textContent = '💡 Returns complete list of all players.';
                     break;
             }
             updatePlayersApiPath();
         });
 
         document.getElementById('players-search').addEventListener('input', updatePlayersApiPath);
-        document.getElementById('players-nba-id').addEventListener('input', updatePlayersApiPath);
+        // players-nba-id update is handled by selectPlayer function
 
         function showResult(containerId, data, isError = false) {
             const container = document.getElementById(containerId);
@@ -3983,7 +4153,10 @@
         // Initial load
         loadAllWidgets();
         loadDbStats();
+        loadAllWidgets();
+        loadDbStats();
         loadCmsPlayers();  // Pre-load CMS data
+        initPlayerSearch(); // Load roster and setup search
         setInterval(updateMetrics, 10000);
     </script>
 </body>

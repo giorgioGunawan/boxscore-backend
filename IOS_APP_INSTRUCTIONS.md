@@ -12,6 +12,27 @@ https://boxscore-backend.onrender.com
 
 All API endpoints are prefixed with `/api/`. The API returns JSON responses.
 
+## Rate Limiting (Throttling)
+
+To prevent abuse, the API has rate limits (throttling) enabling fair usage.
+
+### Limits
+- **Public Endpoints**: 100 requests per minute.
+- **Player Search**: 20 requests per minute.
+
+### Handling Limits
+1. **Status Code**: If you exceed the limit, the API returns `429 Too Many Requests`.
+2. **Retry**: You should handle this by waiting a minute before retrying.
+
+### Best Practice: Device ID
+Rate limits are applied per IP address by default. To prevent rate limiting purely based on public IP (e.g. users on the same Wi-Fi), **you should send a unique Device ID**.
+
+Add the `X-Device-ID` header to all your requested:
+```swift
+var request = URLRequest(url: url)
+request.addValue(UIDevice.current.identifierForVendor?.uuidString ?? "unknown", forHTTPHeaderField: "X-Device-ID")
+```
+
 ## Critical: ID Mapping System
 
 ### Team ID Mapping
