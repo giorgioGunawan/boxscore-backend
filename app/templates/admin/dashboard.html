@@ -2808,15 +2808,20 @@
             try {
                 const response = await fetch(`${API_BASE}/players/roster`);
                 const data = await response.json();
-                if (data.players) {
+                if (data.players && data.players.length > 0) {
                     ALL_PLAYERS = data.players;
                     console.log('Roster loaded:', ALL_PLAYERS.length, 'players');
+                } else {
+                    console.warn('Roster loaded but empty');
+                    showToast('⚠️ Player database is empty. Please run "bootstrap_database" in Cron Management tab.', 'warning');
+                }
 
-                    // Initialize search widgets once data is loaded
-                    setupPlayerSearch('widget-player-search', 'widget-player-id', 'widget-player-results');
-                    setupPlayerSearch('players-nba-search', 'players-nba-id', 'players-nba-results');
+                // Initialize search widgets (even if empty, to setup listeners)
+                setupPlayerSearch('widget-player-search', 'widget-player-id', 'widget-player-results');
+                setupPlayerSearch('players-nba-search', 'players-nba-id', 'players-nba-results');
 
-                    // Pre-fill widget search input if ID exists
+                // Pre-fill widget search input if ID exists and we have data
+                if (ALL_PLAYERS.length > 0) {
                     const widgetId = document.getElementById('widget-player-id').value;
                     if (widgetId) {
                         const player = ALL_PLAYERS.find(p => p.nba_player_id == widgetId);

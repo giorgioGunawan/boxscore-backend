@@ -26,9 +26,14 @@ async def run_job_now(job_name: str, job_func, *args, **kwargs):
     
     try:
         async with AsyncSessionLocal() as db:
-            # Create run record directly (no cron_jobs table lookup)
+            # Look up job_id based on name to ensure FK constraint is met
+            result = await db.execute(select(CronJob).where(CronJob.name == job_name))
+            cron_job = result.scalar_one_or_none()
+            job_id_val = cron_job.id if cron_job else 0
+            
+            # Create run record directly
             run = CronRun(
-                job_id=0,  # Not linked to a cron_job record
+                job_id=job_id_val,
                 job_name=job_name,
                 triggered_by="manual",  # Manually triggered
                 started_at=datetime.now(timezone.utc),
@@ -39,7 +44,7 @@ async def run_job_now(job_name: str, job_func, *args, **kwargs):
             await db.refresh(run)
             run_id = run.id
             
-            print(f"[run_job_now] Created CronRun record with ID: {run_id}")
+            print(f"[run_job_now] Created CronRun record with ID: {run_id} (Job ID: {job_id_val})")
             
             # Create cancellation token
             cancellation_token = get_cancellation_token(run_id)
