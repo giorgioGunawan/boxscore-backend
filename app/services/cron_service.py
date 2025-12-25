@@ -176,33 +176,27 @@ class CronService:
                     }
                 
                 # Filter to games that are finished or should be finished
-                # Games that started 2+ hours ago should be done by now
-                two_hours_ago = now - timedelta(hours=2)
+                # Games that started 3.5+ hours ago should be done by now
+                two_hours_ago = now - timedelta(hours=3.5)
                 two_hours_ago_naive = two_hours_ago.replace(tzinfo=None)
                 games_to_check = []
                 games_skipped_recent = []
-                games_skipped_already_final = []
                 
                 for g in recent_games:
                     if force:
                         # Force mode: check all games regardless of status/time
                         games_to_check.append(g)
                     else:
-                        # Normal mode: only check games that started 2+ hours ago or are already final
-                        if g.start_time_utc <= two_hours_ago_naive or g.status == "final":
+                        # Normal mode: only check games that started 2+ hours ago
+                        if g.start_time_utc <= two_hours_ago_naive:
                             games_to_check.append(g)
-                        elif g.start_time_utc > two_hours_ago_naive:
+                        else:
                             games_skipped_recent.append(g)
-                        elif g.status == "final":
-                            games_skipped_already_final.append(g)
                 
                 details["logs"].append(f"🎯 Filtering games: {'(FORCE MODE - checking all games)' if force else ''}")
-                details["logs"].append(f"   • {len(games_to_check)} games to check (started 2+ hours ago or already final)")
-                if not force:
-                    if games_skipped_recent:
-                        details["logs"].append(f"   • {len(games_skipped_recent)} games skipped (too recent, started <2 hours ago)")
-                    if games_skipped_already_final:
-                        details["logs"].append(f"   • {len(games_skipped_already_final)} games skipped (already final)")
+                details["logs"].append(f"   • {len(games_to_check)} games to check (started 3.5+ hours ago)")
+                if not force and games_skipped_recent:
+                    details["logs"].append(f"   • {len(games_skipped_recent)} games skipped (too recent, started <3.5 hours ago)")
                 
                 if not games_to_check:
                     details["logs"].append("✅ No finished games found. All recent games are still in progress.")
@@ -230,14 +224,10 @@ class CronService:
                     hours_ago = (now_naive - game.start_time_utc).total_seconds() / 3600
                     details["logs"].append(f"   [{idx}/{len(games_to_check)}] {away_abbr} @ {home_abbr} - Status: {game.status}, Started {hours_ago:.1f}h ago")
                 
-                # Fetch all boxscores in parallel for games that need updates
+                # Fetch all boxscores in parallel for all games
                 details["logs"].append("")
-                if force:
-                    # Force mode: update all games regardless of status
-                    games_needing_update = games_to_check
-                else:
-                    # Normal mode: only update games that aren't final or don't have scores
-                    games_needing_update = [g for g in games_to_check if g.status != "final" or g.home_score is None]
+                # Process all games in games_to_check
+                games_needing_update = games_to_check
                 
                 if games_needing_update:
                     details["logs"].append(f"📡 Fetching {len(games_needing_update)} boxscores in parallel...")
@@ -1212,6 +1202,12 @@ class CronService:
                             
                             # Get the team ID from NBA API
                             nba_team_id = player_info.get("team_id")
+                            
+                            # Convert to int if it's not None (pandas might return numpy int or 0 for free agents)
+                            if nba_team_id is not None and nba_team_id != 0:
+                                nba_team_id = int(nba_team_id)
+                            else:
+                                nba_team_id = None
                             
                             if not nba_team_id:
                                 # Player might be a free agent or retired
