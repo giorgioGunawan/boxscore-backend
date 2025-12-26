@@ -421,16 +421,52 @@ async def list_games(
     total_result = await db.execute(count_query)
     total = total_result.scalar_one()
     
-    # Get paginated results
-    query = query.order_by(Game.start_time_utc.desc()).offset(offset).limit(limit)
-    result = await db.execute(query)
-    games = result.scalars().all()
+    # Get ALL games (we'll sort them in Python for custom logic)
+    query_all = query  # Don't apply offset/limit yet
+    result = await db.execute(query_all)
+    all_games = result.scalars().all()
+    
+    # Sort games: upcoming first, then past (reverse chrono), then future
+    now = datetime.now(timezone.utc)
+    
+    upcoming_games = []  # Games that haven't started yet, closest first
+    past_games = []      # Games that have started/finished, most recent first
+    
+    for g in all_games:
+        if g.start_time_utc:
+            game_time = g.start_time_utc.replace(tzinfo=timezone.utc) if g.start_time_utc.tzinfo is None else g.start_time_utc
+            if game_time > now:
+                upcoming_games.append((game_time, g))
+            else:
+                past_games.append((game_time, g))
+        else:
+            past_games.append((datetime.min.replace(tzinfo=timezone.utc), g))
+    
+    # Sort upcoming games by time (closest first)
+    upcoming_games.sort(key=lambda x: x[0])
+    
+    # Sort past games by time (most recent first)
+    past_games.sort(key=lambda x: x[0], reverse=True)
+    
+    # Split upcoming into immediate next game and future games
+    if upcoming_games:
+        next_game = [upcoming_games[0]]  # The very next game
+        future_games = upcoming_games[1:]  # All other future games
+    else:
+        next_game = []
+        future_games = []
+    
+    # Combine: next game, past games, then future games
+    sorted_games = [g for _, g in next_game] + [g for _, g in past_games] + [g for _, g in future_games]
+    
+    # Apply pagination to sorted list
+    paginated_games = sorted_games[offset:offset + limit]
     
     # Convert UTC to Eastern Time for display
     eastern = zoneinfo.ZoneInfo("America/New_York")
     
     games_list = []
-    for g in games:
+    for g in paginated_games:
         if g.start_time_utc:
             utc_time = g.start_time_utc.replace(tzinfo=timezone.utc)
             eastern_time = utc_time.astimezone(eastern)
@@ -457,7 +493,7 @@ async def list_games(
     
     return {
         "games": games_list,
-        "count": len(games),
+        "count": len(paginated_games),
         "total": total,
         "offset": offset,
         "limit": limit,
@@ -710,10 +746,14 @@ async def list_player_game_stats(
                     "id": s.id,
                     "player_id": s.player_id,
                     "player_name": s.player.full_name if s.player else None,
+                    "player_team": s.player.team.abbreviation if s.player and s.player.team else None,
+                    "player_team_id": s.player.team_id if s.player else None,
                     "game_id": s.game_id,
                     "game_date": s.game.start_time_utc.strftime("%Y-%m-%d") if s.game and s.game.start_time_utc else None,
                     "home_team": s.game.home_team.abbreviation if s.game and s.game.home_team else None,
+                    "home_team_id": s.game.home_team_id if s.game else None,
                     "away_team": s.game.away_team.abbreviation if s.game and s.game.away_team else None,
+                    "away_team_id": s.game.away_team_id if s.game else None,
                     "pts": s.pts,
                     "reb": s.reb,
                     "ast": s.ast,
