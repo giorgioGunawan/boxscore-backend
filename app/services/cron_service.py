@@ -1116,6 +1116,171 @@ class CronService:
                 }
 
     @staticmethod
+    async def update_player_rosters(
+        run_id: int,
+        cancellation_token: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Update all team rosters from NBA API.
+        Adds new players (rookies) and updates team assignments for traded players.
+        This is more comprehensive than update_players_team as it processes entire rosters.
+        """
+        start_time = datetime.now(timezone.utc)
+        details = {
+            "players_added": 0,
+            "players_updated": 0,
+            "teams_processed": 0,
+            "errors": [],
+            "logs": []
+        }
+        
+        async with AsyncSessionLocal() as db:
+            try:
+                # Check for cancellation before starting
+                if cancellation_token:
+                    cancellation_token.check()
+                
+                details["logs"].append(f"🔍 Starting update_player_rosters job at {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                details["logs"].append(f"📅 Season: {settings.current_season}")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                # Get all teams
+                result = await db.execute(select(Team))
+                teams = result.scalars().all()
+                
+                details["logs"].append(f"📊 Found {len(teams)} teams in database")
+                details["logs"].append("")
+                details["logs"].append("🏀 Fetching rosters from NBA API...")
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                if not teams:
+                    details["logs"].append("⚠️ No teams found in database")
+                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                    details["duration_seconds"] = duration
+                    return {
+                        "status": "success",
+                        "items_updated": 0,
+                        "details": details
+                    }
+                
+                loop = asyncio.get_event_loop()
+                
+                for i, team in enumerate(teams, 1):
+                    # Check for cancellation
+                    if cancellation_token:
+                        cancellation_token.check()
+                    
+                    try:
+                        details["logs"].append(f"[{i}/{len(teams)}] {team.abbreviation}...", )
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
+                        
+                        # Fetch roster from NBA API
+                        roster = await loop.run_in_executor(
+                            None,
+                            lambda t=team: NBAClient.get_team_roster(t.nba_team_id, season=settings.current_season)
+                        )
+                        
+                        new_players = 0
+                        updated_players = 0
+                        
+                        for p_data in roster:
+                            nba_id = p_data["nba_player_id"]
+                            
+                            # Check if player exists
+                            res = await db.execute(
+                                select(Player).where(Player.nba_player_id == nba_id)
+                            )
+                            player = res.scalar_one_or_none()
+                            
+                            if not player:
+                                # Create new player
+                                player = Player(
+                                    nba_player_id=nba_id,
+                                    full_name=p_data["name"],
+                                    team_id=team.id,
+                                    position=p_data.get("position"),
+                                    jersey_number=p_data.get("number")
+                                )
+                                db.add(player)
+                                new_players += 1
+                                
+                                # Log notable new players (rookies, etc.)
+                                if new_players <= 3:
+                                    details["logs"].append(f"   ✨ NEW: {p_data['name']} (#{p_data.get('number')})")
+                            else:
+                                # Update existing player's team if changed
+                                if player.team_id != team.id:
+                                    old_team_res = await db.execute(
+                                        select(Team).where(Team.id == player.team_id)
+                                    )
+                                    old_team = old_team_res.scalar_one_or_none()
+                                    old_abbr = old_team.abbreviation if old_team else "???"
+                                    details["logs"].append(f"   🔄 TRADED: {player.full_name} ({old_abbr} → {team.abbreviation})")
+                                    player.team_id = team.id
+                                    updated_players += 1
+                        
+                        await db.commit()
+                        
+                        details["players_added"] += new_players
+                        details["players_updated"] += updated_players
+                        details["teams_processed"] += 1
+                        
+                        # Update the last log entry with results
+                        if new_players > 0 or updated_players > 0:
+                            details["logs"][-1] = f"[{i}/{len(teams)}] {team.abbreviation} ✅ {len(roster)} players ({new_players} new, {updated_players} updated)"
+                        else:
+                            details["logs"][-1] = f"[{i}/{len(teams)}] {team.abbreviation} ✅ {len(roster)} players (no changes)"
+                        
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
+                        
+                    except Exception as e:
+                        error_msg = f"Error processing {team.abbreviation}: {str(e)}"
+                        details["errors"].append(error_msg)
+                        details["logs"].append(f"[{i}/{len(teams)}] {team.abbreviation} ❌ {str(e)}")
+                        await update_run_progress(run_id, details, db_session=db)
+                        await db.commit()
+                        continue
+                
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                details["duration_seconds"] = duration
+                
+                # Final summary
+                total_items = details["players_added"] + details["players_updated"]
+                details["logs"].append("")
+                details["logs"].append("📊 SUMMARY:")
+                details["logs"].append(f"   Teams processed: {details['teams_processed']}")
+                details["logs"].append(f"   New players added: {details['players_added']}")
+                details["logs"].append(f"   Players updated: {details['players_updated']}")
+                details["logs"].append(f"   Total changes: {total_items}")
+                details["logs"].append(f"   Duration: {duration:.2f} seconds")
+                if details["errors"]:
+                    details["logs"].append(f"   Errors: {len(details['errors'])}")
+                
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
+                return {
+                    "status": "success",
+                    "items_updated": total_items,
+                    "details": details
+                }
+                
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "details": details
+                }
+
+    @staticmethod
     async def update_players_team(
         run_id: int,
         cancellation_token: Optional[Any] = None,

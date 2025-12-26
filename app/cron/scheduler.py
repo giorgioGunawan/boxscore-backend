@@ -373,6 +373,12 @@ async def initialize_cron_jobs():
                 "cron_expression": None,
             },
             {
+                "name": "update_player_rosters",
+                "description": "Manual: Update all team rosters - adds new players (rookies) and updates traded players",
+                "schedule": "manual",
+                "cron_expression": None,
+            },
+            {
                 "name": "update_team_results",
                 "description": "Every 24 hours: Comprehensive update of game results and standings",
                 "schedule": "every 24 hours",
