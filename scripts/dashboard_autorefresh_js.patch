@@ -1,0 +1,132 @@
+// Auto-Refresh JavaScript - Add to dashboard.html around line 4165
+
+// Auto-refresh for cron jobs list
+let jobsRefreshInterval = null;
+let hasRunningJobs = false;
+
+function startJobsAutoRefresh() {
+    if (jobsRefreshInterval) return; // Already running
+    
+    console.log('Starting auto-refresh for jobs list');
+    jobsRefreshInterval = setInterval(async () => {
+        await refreshJobsList();
+    }, 5000); // Refresh every 5 seconds
+}
+
+function stopJobsAutoRefresh() {
+    if (jobsRefreshInterval) {
+        console.log('Stopping auto-refresh for jobs list');
+        clearInterval(jobsRefreshInterval);
+        jobsRefreshInterval = null;
+    }
+}
+
+async function refreshJobsList() {
+    try {
+        const response = await fetch('/api/admin/cron/jobs');
+        const data = await response.json();
+        
+        // Check if any jobs are running
+        const runningJobs = data.jobs.filter(job => {
+            // A job is considered "running" if it was triggered recently
+            // We'll check the runs to see if there are any in "running" status
+            return false; // We'll update this after fetching runs
+        });
+        
+        // Update each job card
+        for (const job of data.jobs) {
+            updateJobCard(job);
+        }
+        
+        // Check if we should continue auto-refresh
+        const stillHasRunningJobs = await checkForRunningJobs();
+        
+        if (!stillHasRunningJobs && hasRunningJobs) {
+            // All jobs completed, stop auto-refresh
+            hasRunningJobs = false;
+            stopJobsAutoRefresh();
+            console.log('All jobs completed, stopped auto-refresh');
+        }
+        
+        hasRunningJobs = stillHasRunningJobs;
+        
+    } catch (error) {
+        console.error('Error refreshing jobs list:', error);
+    }
+}
+
+async function checkForRunningJobs() {
+    try {
+        const response = await fetch('/api/admin/cron/runs?limit=20&status=running');
+        const data = await response.json();
+        return data.runs && data.runs.length > 0;
+    } catch (error) {
+        console.error('Error checking for running jobs:', error);
+        return false;
+    }
+}
+
+function updateJobCard(job) {
+    const card = document.querySelector(`[data-job-id="${job.id}"]`);
+    if (!card) return;
+    
+    // Update last run time
+    const lastRunEl = card.querySelector('.job-last-run');
+    if (lastRunEl && job.last_run) {
+        const lastRunDate = new Date(job.last_run);
+        lastRunEl.textContent = `Last run: ${formatRelativeTime(lastRunDate)}`;
+    }
+    
+    // Update run counts
+    const statsEl = card.querySelector('.job-stats');
+    if (statsEl) {
+        statsEl.innerHTML = `
+            <span>Total: ${job.total_runs}</span>
+            <span class="success">✓ ${job.successful_runs}</span>
+            <span class="failed">✗ ${job.failed_runs}</span>
+            <span>${job.success_rate}% success</span>
+        `;
+    }
+    
+    // Update status indicator if exists
+    const statusEl = card.querySelector('.job-status');
+    if (statusEl) {
+        // This would need to be enhanced to show "running" status
+        // For now, we'll just update the visual state
+    }
+}
+
+function formatRelativeTime(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+}
+
+// Modify the existing triggerJob function to start auto-refresh
+const originalTriggerJob = window.triggerJob;
+window.triggerJob = async function(jobId, jobName) {
+    // Call original function
+    if (originalTriggerJob) {
+        await originalTriggerJob(jobId, jobName);
+    }
+    
+    // Start auto-refresh
+    hasRunningJobs = true;
+    startJobsAutoRefresh();
+};
+
+// Also start auto-refresh on page load if there are running jobs
+document.addEventListener('DOMContentLoaded', async () => {
+    const hasRunning = await checkForRunningJobs();
+    if (hasRunning) {
+        hasRunningJobs = true;
+        startJobsAutoRefresh();
+    }
+});

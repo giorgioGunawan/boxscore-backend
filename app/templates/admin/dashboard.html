@@ -81,6 +81,7 @@
             font-size: 1.75rem;
             font-weight: 700;
             background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -732,6 +733,281 @@
         @keyframes spin {
             to {
                 transform: rotate(360deg);
+            }
+        }
+
+        /* Mobile Responsive Improvements */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                white-space: nowrap;
+                min-width: auto;
+            }
+
+            /* Jobs Grid - Single Column on Mobile */
+            .jobs-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Touch-Friendly Buttons */
+            .action-btn,
+            button {
+                min-height: 44px;
+                padding: 0.875rem 1.25rem;
+                font-size: 1rem;
+            }
+
+            .action-btn.small {
+                min-height: 40px;
+                padding: 0.75rem 1rem;
+            }
+
+            /* Job Cards */
+            .job-card {
+                padding: 1rem;
+            }
+
+            .job-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .job-actions {
+                width: 100%;
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .job-actions button {
+                flex: 1;
+            }
+
+            /* Logs Container */
+            .logs-container {
+                max-height: 300px;
+                font-size: 0.8125rem;
+            }
+
+            /* Make logs collapsible on mobile */
+            .logs-header {
+                cursor: pointer;
+                user-select: none;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem;
+                background: var(--bg-secondary);
+                border-radius: 8px;
+                margin-bottom: 0.5rem;
+            }
+
+            .logs-header:active {
+                background: var(--bg-hover);
+            }
+
+            .logs-content.collapsed {
+                display: none;
+            }
+
+            /* Tables - Convert to Cards on Mobile */
+            .cms-table-container {
+                overflow: visible;
+            }
+
+            .cms-table {
+                min-width: 100%;
+                border: none;
+            }
+
+            /* Hide table headers on mobile */
+            .cms-table thead {
+                display: none;
+            }
+
+            /* Make each row a card */
+            .cms-table tbody tr {
+                display: block;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            .cms-table tbody tr:hover {
+                background: var(--bg-hover);
+            }
+
+            /* Make each cell a row in the card */
+            .cms-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 0.5rem 0;
+                border: none;
+                border-bottom: 1px solid var(--border);
+                gap: 1rem;
+            }
+
+            .cms-table td:last-child {
+                border-bottom: none;
+            }
+
+            /* Add labels before each cell using data-label attribute */
+            .cms-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-muted);
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                flex-shrink: 0;
+                width: 40%;
+            }
+
+            /* Style the cell content */
+            .cms-table td>* {
+                flex: 1;
+                text-align: right;
+            }
+
+            /* Actions column - full width */
+            .cms-table td.actions,
+            .cms-table td.sticky-actions {
+                flex-direction: column;
+                align-items: stretch;
+                padding-top: 0.75rem;
+                margin-top: 0.5rem;
+                border-top: 1px dashed var(--border);
+            }
+
+            .cms-table td.actions::before,
+            .cms-table td.sticky-actions::before {
+                content: 'Actions';
+                width: 100%;
+                text-align: center;
+                margin-bottom: 0.5rem;
+            }
+
+            .cms-table td.actions>div,
+            .cms-table td.sticky-actions>div {
+                width: 100%;
+                display: flex;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+
+            .cms-table td.actions button,
+            .cms-table td.sticky-actions button {
+                flex: 1;
+                min-height: 40px;
+            }
+
+            /* Status badges - keep inline */
+            .cms-table td .status-badge,
+            .cms-table td .badge {
+                display: inline-block;
+            }
+
+            /* Code/monospace content - allow wrapping */
+            .cms-table td code,
+            .cms-table td .mono {
+                word-break: break-all;
+                white-space: normal;
+            }
+
+            /* Input Groups - Stack on Mobile */
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            select,
+            input[type="text"],
+            input[type="number"] {
+                width: 100%;
+                min-width: 100%;
+            }
+
+            /* Toast Notifications */
+            .toast {
+                left: 1rem;
+                right: 1rem;
+                bottom: 1rem;
+            }
+
+            /* Sticky Job Status */
+            .job-status-sticky {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: var(--bg-card);
+                padding: 0.75rem;
+                border-bottom: 1px solid var(--border);
+                margin: -1rem -1rem 1rem -1rem;
+            }
+        }
+
+        /* Tablet Adjustments */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .jobs-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Large Mobile / Small Tablet */
+        @media (max-width: 480px) {
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.25rem;
+            }
+
+            .logo h1 {
+                font-size: 1.25rem;
+            }
+
+            .season-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.75rem;
+            }
+
+            /* Smaller font sizes for very small screens */
+            body {
+                font-size: 14px;
+            }
+
+            .job-card h3 {
+                font-size: 0.9rem;
+            }
+
+            .job-meta {
+                font-size: 0.75rem;
             }
         }
 
@@ -4165,6 +4441,186 @@
         loadCmsPlayers();  // Pre-load CMS data
         initPlayerSearch(); // Load roster and setup search
         setInterval(updateMetrics, 10000);
+
+        // ============================================
+        // Auto-Refresh for Cron Jobs List
+        // ============================================
+        let jobsRefreshInterval = null;
+        let hasRunningJobs = false;
+
+        function startJobsAutoRefresh() {
+            if (jobsRefreshInterval) return; // Already running
+
+            console.log('🔄 Starting auto-refresh for jobs list');
+            jobsRefreshInterval = setInterval(async () => {
+                await refreshJobsList();
+            }, 5000); // Refresh every 5 seconds
+        }
+
+        function stopJobsAutoRefresh() {
+            if (jobsRefreshInterval) {
+                console.log('⏹️ Stopping auto-refresh for jobs list');
+                clearInterval(jobsRefreshInterval);
+                jobsRefreshInterval = null;
+            }
+        }
+
+        async function refreshJobsList() {
+            try {
+                // Check if we should continue auto-refresh
+                const stillHasRunningJobs = await checkForRunningJobs();
+
+                if (stillHasRunningJobs) {
+                    // Reload the jobs to update their status
+                    await loadCronJobs();
+                }
+
+                if (!stillHasRunningJobs && hasRunningJobs) {
+                    // All jobs completed, stop auto-refresh
+                    hasRunningJobs = false;
+                    stopJobsAutoRefresh();
+                    console.log('✅ All jobs completed, stopped auto-refresh');
+
+                    // Final refresh to show completed status
+                    await loadCronJobs();
+                }
+
+                hasRunningJobs = stillHasRunningJobs;
+
+            } catch (error) {
+                console.error('Error refreshing jobs list:', error);
+            }
+        }
+
+        async function checkForRunningJobs() {
+            try {
+                const response = await fetch('/api/admin/cron/runs?limit=20&status=running');
+                const data = await response.json();
+                return data.runs && data.runs.length > 0;
+            } catch (error) {
+                console.error('Error checking for running jobs:', error);
+                return false;
+            }
+        }
+
+        // Wrap the original triggerJob function to start auto-refresh
+        const originalTriggerJob = window.triggerJob;
+        window.triggerJob = async function (jobId, jobName) {
+            // Call original function
+            if (originalTriggerJob) {
+                await originalTriggerJob(jobId, jobName);
+            }
+
+            // Start auto-refresh
+            hasRunningJobs = true;
+            startJobsAutoRefresh();
+
+            console.log('🚀 Started job:', jobName, '- Auto-refresh enabled');
+        };
+
+        // Check for running jobs on page load and start auto-refresh if needed
+        (async function checkInitialRunningJobs() {
+            const hasRunning = await checkForRunningJobs();
+            if (hasRunning) {
+                console.log('📊 Found running jobs on page load - starting auto-refresh');
+                hasRunningJobs = true;
+                startJobsAutoRefresh();
+            }
+        })();
+
+        // ============================================
+        // Mobile Table to Card Conversion
+        // ============================================
+        function addDataLabelsToTables() {
+            // Find all tables with class cms-table
+            const tables = document.querySelectorAll('.cms-table');
+
+            tables.forEach(table => {
+                // Get all header cells
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+
+                // Get all body rows
+                const rows = table.querySelectorAll('tbody tr');
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        // Add data-label attribute with the corresponding header text
+                        if (headers[index]) {
+                            cell.setAttribute('data-label', headers[index]);
+                        }
+                    });
+                });
+            });
+        }
+
+        // Call this function after tables are populated
+        // We'll need to call it in each load function
+        function initMobileTables() {
+            addDataLabelsToTables();
+        }
+
+        // Add to initial load
+        initMobileTables();
+
+        // Also call after any table updates
+        const originalLoadCronJobs = window.loadCronJobs;
+        if (originalLoadCronJobs) {
+            window.loadCronJobs = async function () {
+                await originalLoadCronJobs();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCronRuns = window.loadCronRuns;
+        if (originalLoadCronRuns) {
+            window.loadCronRuns = async function () {
+                await originalLoadCronRuns();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCmsPlayers = window.loadCmsPlayers;
+        if (originalLoadCmsPlayers) {
+            window.loadCmsPlayers = async function () {
+                await originalLoadCmsPlayers();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCmsGames = window.loadCmsGames;
+        if (originalLoadCmsGames) {
+            window.loadCmsGames = async function () {
+                await originalLoadCmsGames();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCmsStats = window.loadCmsStats;
+        if (originalLoadCmsStats) {
+            window.loadCmsStats = async function () {
+                await originalLoadCmsStats();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCmsPlayerGameStats = window.loadCmsPlayerGameStats;
+        if (originalLoadCmsPlayerGameStats) {
+            window.loadCmsPlayerGameStats = async function () {
+                await originalLoadCmsPlayerGameStats();
+                addDataLabelsToTables();
+            };
+        }
+
+        const originalLoadCmsStandings = window.loadCmsStandings;
+        if (originalLoadCmsStandings) {
+            window.loadCmsStandings = async function () {
+                await originalLoadCmsStandings();
+                addDataLabelsToTables();
+            };
+        }
+
+        console.log('📱 Mobile table-to-card conversion initialized');
     </script>
 </body>
 

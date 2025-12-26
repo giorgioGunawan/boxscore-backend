@@ -638,6 +638,10 @@ class CronService:
                 if details["errors"]:
                     details["logs"].append(f"   Errors: {len(details['errors'])}")
                 
+                # Final update before returning
+                await update_run_progress(run_id, details, db_session=db)
+                await db.commit()
+                
                 return {
                     "status": "success",
                     "items_updated": total_items,
@@ -691,6 +695,15 @@ class CronService:
                 # Get players that need updating (haven't been updated in 3 days)
                 if force:
                     details["logs"].append(f"📅 FORCE MODE: Updating all players regardless of last sync time")
+                    # Count total first
+                    count_result = await db.execute(
+                        select(func.count(PlayerSeasonStats.id)).where(
+                            PlayerSeasonStats.season == settings.current_season,
+                            PlayerSeasonStats.is_manual_override == False
+                        )
+                    )
+                    total_needing_update = count_result.scalar()
+                    
                     result = await db.execute(
                         select(PlayerSeasonStats).where(
                             PlayerSeasonStats.season == settings.current_season,
@@ -700,6 +713,20 @@ class CronService:
                 else:
                     three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
                     details["logs"].append(f"📅 Looking for players not updated since {three_days_ago.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+                    
+                    # Count total first
+                    count_result = await db.execute(
+                        select(func.count(PlayerSeasonStats.id)).where(
+                            or_(
+                                PlayerSeasonStats.last_api_sync < three_days_ago,
+                                PlayerSeasonStats.last_api_sync.is_(None)
+                            ),
+                            PlayerSeasonStats.season == settings.current_season,
+                            PlayerSeasonStats.is_manual_override == False
+                        )
+                    )
+                    total_needing_update = count_result.scalar()
+                    
                     result = await db.execute(
                         select(PlayerSeasonStats).where(
                             or_(
@@ -712,7 +739,11 @@ class CronService:
                     )
                 stats_to_update = result.scalars().all()
                 
-                details["logs"].append(f"📊 Found {len(stats_to_update)} players needing updates")
+                details["logs"].append(f"📊 Total players needing updates: {total_needing_update}")
+                details["logs"].append(f"📊 Processing batch of {len(stats_to_update)} players (limit: {batch_size})")
+                if total_needing_update > batch_size:
+                    remaining = total_needing_update - batch_size
+                    details["logs"].append(f"   ⏳ {remaining} players will be updated in future runs")
                 await update_run_progress(run_id, details, db_session=db)
                 await db.commit()
                 
