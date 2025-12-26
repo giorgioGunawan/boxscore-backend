@@ -3787,6 +3787,52 @@
                     return;
                 }
 
+                // Get team info from first stat
+                const firstStat = data.stats[0];
+                const awayTeam = firstStat.away_team;
+                const homeTeam = firstStat.home_team;
+                const awayTeamId = firstStat.away_team_id;
+                const homeTeamId = firstStat.home_team_id;
+
+                // Split players by team
+                const awayPlayers = data.stats.filter(s => s.player_team_id === awayTeamId);
+                const homePlayers = data.stats.filter(s => s.player_team_id === homeTeamId);
+
+                // Function to create team table
+                const createTeamTable = (teamName, players) => `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; color: var(--accent-orange);">${teamName}</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid var(--border);">
+                                        <th style="text-align: left; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Player</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">MIN</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">PTS</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">REB</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">AST</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">STL</th>
+                                        <th style="text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem;">BLK</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${players.map(s => `
+                                        <tr style="border-bottom: 1px solid var(--border);">
+                                            <td style="padding: 0.75rem; font-weight: 500;">${s.player_name || 'Unknown'}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace;">${s.minutes || '-'}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); font-weight: 600;">${s.pts || 0}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace;">${s.reb || 0}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace;">${s.ast || 0}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace;">${s.stl || 0}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-family: 'JetBrains Mono', monospace;">${s.blk || 0}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
                 // Create modal content
                 const statsHtml = `
                     <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 1rem;" onclick="this.remove()">
