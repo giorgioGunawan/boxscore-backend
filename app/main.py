@@ -9,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.cache import close_redis
 from app.api import api_router
 from app.api.admin import set_templates
 from app.config import get_settings
@@ -50,7 +49,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     print("🛑 Shutting down...")
     stop_scheduler()
-    await close_redis()
     print("✅ Redis connection closed")
 
 

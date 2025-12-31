@@ -14,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.cache import increment_upstream_calls
 
 settings = get_settings()
 
@@ -97,7 +96,6 @@ class HybridDataService:
         
         # 4. Try to fetch from API
         try:
-            increment_upstream_calls()
             api_data = await api_fetch_fn()
             
             if api_data:

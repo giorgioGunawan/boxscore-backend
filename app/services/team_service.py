@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Team
 from app.nba_client import NBAClient
-from app.cache import cache_get, cache_set, cache_delete_pattern
 from app.config import get_settings
 
 settings = get_settings()

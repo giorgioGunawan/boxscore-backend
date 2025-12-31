@@ -22,7 +22,6 @@ from nba_api.stats.endpoints import (
     commonteamroster,
 )
 
-from app.cache import increment_upstream_calls
 
 
 def rate_limited(func):
@@ -35,7 +34,6 @@ def rate_limited(func):
         for attempt in range(max_retries):
             try:
                 time.sleep(0.6 + (attempt * 0.5))  # Increase delay on retries
-                increment_upstream_calls()
                 return func(*args, **kwargs)
             except Exception as e:
                 last_error = e

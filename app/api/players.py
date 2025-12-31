@@ -163,7 +163,7 @@ async def get_player_roster(
     Returns a complete roster of all players in the database with team information.
     Designed for iOS widgets that need up-to-date player-team relationships.
     
-    Response is cached for 1 hour to optimize performance.
+    Returns complete roster of all players in the database with team information.
     
     Example: /api/players/roster
     """
@@ -171,17 +171,7 @@ async def get_player_roster(
     from sqlalchemy import select
     from app.models.player import Player
     from app.models.team import Team
-    from app.cache import cache_get, cache_set
     from fastapi.responses import JSONResponse
-    
-    # Check cache first
-    cache_key = "player_roster_v1"
-    cached_data = await cache_get(cache_key)
-    if cached_data:
-        return JSONResponse(
-            content=cached_data,
-            headers={"Cache-Control": "public, max-age=3600"}
-        )
     
     try:
         # Query all players with team relationships
@@ -221,10 +211,7 @@ async def get_player_roster(
             "players": players
         }
         
-        # Cache for 1 hour (3600 seconds)
-        await cache_set(cache_key, response_data, ttl=3600)
         
-        # Return with cache headers
         return JSONResponse(
             content=response_data,
             headers={"Cache-Control": "public, max-age=3600"}

@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Team, Player, Game, TeamStandings, PlayerSeasonStats, PlayerGameStats
 from app.services import TeamService, StandingsService, GameService
-from app.cache import get_cache_metrics, reset_cache_metrics, cache_delete_pattern
 from app.config import get_settings
 from app.nba_client import NBAClient
 
@@ -27,28 +26,6 @@ def set_templates(t: Jinja2Templates):
 
 
 # ============ API Endpoints ============
-
-@router.get("/metrics")
-async def get_metrics():
-    """Get cache and API metrics."""
-    return {
-        "cache": get_cache_metrics(),
-        "settings": {
-            "current_season": settings.current_season,
-            "cache_ttl_games": settings.cache_ttl_games,
-            "cache_ttl_standings": settings.cache_ttl_standings,
-            "cache_ttl_player_stats": settings.cache_ttl_player_stats,
-        },
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-
-
-@router.post("/metrics/reset")
-async def reset_metrics():
-    """Reset cache metrics."""
-    reset_cache_metrics()
-    return {"status": "ok", "message": "Metrics reset"}
-
 
 @router.get("/stats")
 async def get_database_stats(db: AsyncSession = Depends(get_db)):
@@ -125,11 +102,6 @@ async def refresh_team_games(
     return {"status": "ok", "team": team.abbreviation, "games_added": count}
 
 
-@router.post("/cache/clear")
-async def clear_cache(pattern: str = Query(default="*")):
-    """Clear cache entries matching pattern."""
-    count = await cache_delete_pattern(pattern)
-    return {"status": "ok", "keys_deleted": count}
 
 
 @router.get("/teams/{team_id}/inspect")
@@ -276,8 +248,6 @@ async def admin_dashboard(
     result = await db.execute(select(Team).order_by(Team.name))
     teams = result.scalars().all()
     
-    # Get cache metrics
-    metrics = get_cache_metrics()
     
     return templates.TemplateResponse(
         "admin/dashboard.html",

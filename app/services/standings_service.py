@@ -8,7 +8,6 @@ from sqlalchemy.orm import selectinload
 
 from app.models import Team, TeamStandings
 from app.nba_client import NBAClient
-from app.cache import cache_get, cache_set, cache_delete_pattern
 from app.config import get_settings
 from app.services.team_service import TeamService
 
@@ -30,13 +29,7 @@ class StandingsService:
         Get standings for a specific team.
         """
         season = season or settings.current_season
-        cache_key = f"team:{team_id}:standing:{season}:{season_type}"
         
-        # Check cache first
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         # Get team
         result = await db.execute(
@@ -92,8 +85,6 @@ class StandingsService:
             "last_10": standing.last_10,
         }
         
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_standings)
         
         return response
     
@@ -109,13 +100,7 @@ class StandingsService:
         Get standings for an entire conference.
         """
         season = season or settings.current_season
-        cache_key = f"standings:{conference}:{season}:{season_type}"
         
-        # Check cache first
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         # Query standings from DB
         result = await db.execute(
@@ -168,8 +153,6 @@ class StandingsService:
                 "last_10": standing.last_10,
             })
         
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_standings)
         
         return response
     
@@ -272,8 +255,6 @@ class StandingsService:
         await db.commit()
         
         # Invalidate standings cache
-        await cache_delete_pattern("team:*:standing:*")
-        await cache_delete_pattern("standings:*")
         
         return count
 

@@ -9,7 +9,6 @@ from sqlalchemy.orm import selectinload
 
 from app.models import Player, PlayerSeasonStats, PlayerGameStats, Game, Team
 from app.nba_client import NBAClient
-from app.cache import cache_get, cache_set, cache_delete_pattern
 from app.config import get_settings
 from app.services.team_service import TeamService
 from app.services.data_provider import DataProvider
@@ -154,13 +153,7 @@ class PlayerService:
         4. If API fails -> Return stale local data
         """
         season = season or settings.current_season
-        cache_key = f"player:{player_id}:season_avg:{season}:{season_type}"
         
-        # Check cache first (unless forcing refresh)
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         # Get player from DB
         result = await db.execute(
@@ -256,8 +249,6 @@ class PlayerService:
         response = _build_season_averages_response(player, stats, season, season_type)
         response = DataProvider.add_metadata(response, stats, is_stale=not api_success and stats.last_api_sync is not None)
         
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_player_stats)
         
         return response
     
@@ -274,13 +265,7 @@ class PlayerService:
         If no data for current season, will try to find most recent game.
         """
         original_season = season or settings.current_season
-        cache_key = f"player:{player_id}:latest_game:{original_season}:{season_type}"
         
-        # Check cache first
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         season = original_season
         
@@ -423,8 +408,6 @@ class PlayerService:
         
         response = DataProvider.add_metadata(response, game_stats)
         
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_player_game)
         
         return response
     
@@ -442,8 +425,6 @@ class PlayerService:
         if not player:
             return None
         
-        # Invalidate cache
-        await cache_delete_pattern(f"player:{player_id}:*")
         
         return await PlayerService.get_player_by_id(db, player_id)
     
@@ -485,8 +466,6 @@ class PlayerService:
         else:
             stats = await set_manual_override(db, PlayerSeasonStats, stats.id, data, reason)
         
-        # Invalidate cache
-        await cache_delete_pattern(f"player:{player_id}:season_avg:*")
         
         return await PlayerService.get_player_season_averages(db, player_id, season, season_type)
     
@@ -499,7 +478,6 @@ class PlayerService:
         if not player:
             return None
         
-        await cache_delete_pattern(f"player:{player_id}:*")
         return await PlayerService.get_player_by_id(db, player_id)
 
 

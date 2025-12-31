@@ -1,4 +1,4 @@
-"""Game service with cache-aside pattern."""
+"""Game service for managing NBA game data."""
 import asyncio
 import zoneinfo
 from datetime import datetime, timedelta, timezone
@@ -9,7 +9,6 @@ from sqlalchemy.orm import selectinload
 
 from app.models import Game, Team
 from app.nba_client import NBAClient
-from app.cache import cache_get, cache_set, cache_delete_pattern
 from app.config import get_settings
 from app.services.team_service import TeamService
 
@@ -33,13 +32,6 @@ class GameService:
         Uses the schedule endpoint which includes future games.
         """
         season = season or settings.current_season
-        cache_key = f"team:{team_id}:next_games:{count}:{season}:{season_type}"
-        
-        # Check cache first
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         # Get team
         result = await db.execute(select(Team).where(Team.id == team_id))
@@ -118,9 +110,6 @@ class GameService:
                 "venue": "Home" if is_home else "Away",
             })
         
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_games)
-        
         return response
     
     @staticmethod
@@ -136,13 +125,6 @@ class GameService:
         Get last N completed games for a team.
         """
         season = season or settings.current_season
-        cache_key = f"team:{team_id}:last_games:{count}:{season}:{season_type}"
-        
-        # Check cache first
-        if not force_refresh:
-            cached = await cache_get(cache_key)
-            if cached:
-                return cached
         
         # Get team
         result = await db.execute(select(Team).where(Team.id == team_id))
@@ -223,9 +205,6 @@ class GameService:
                 "result": result_str,
                 "score_display": f"{team_score}-{opponent_score}" if team_score is not None else None,
             })
-        
-        # Cache the response
-        await cache_set(cache_key, response, settings.cache_ttl_games)
         
         return response
     
@@ -365,8 +344,6 @@ class GameService:
         
         await db.commit()
         
-        # Invalidate cache for this team
-        await cache_delete_pattern(f"team:{team.id}:*")
         
         return count
     
@@ -480,8 +457,6 @@ class GameService:
         
         await db.commit()
         
-        # Invalidate cache for this team
-        await cache_delete_pattern(f"team:{team.id}:*")
         
         return count
     
