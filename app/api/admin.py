@@ -259,7 +259,6 @@ async def admin_dashboard(
                 "games": games_count or 0,
             },
             "teams": teams,
-            "metrics": metrics,
             "settings": {
                 "current_season": settings.current_season,
             },
